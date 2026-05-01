@@ -417,9 +417,11 @@
       <div class="spur-desc">Pro Punkt: Status · Risiko-Stufe · Branchen-Benchmark · Maßnahme · Aufwand × Wirkung · Quellen. Plus 90-Tage-Roadmap.</div>
       <button class="spur-cta" id="pdf-toggle">Bericht + Newsletter →</button>
       <form class="pdf-form" id="pdf-form">
-        <input type="text" id="pdf-name" placeholder="Vorname" required>
-        <input type="email" id="pdf-email" placeholder="E-Mail" required>
-        <button type="submit">Bericht anfordern</button>
+        <input type="text" id="pdf-name" placeholder="Vorname *" required>
+        <input type="email" id="pdf-email" placeholder="E-Mail *" required>
+        <input type="text" id="pdf-company-spur2" placeholder="Unternehmen (optional)">
+        <button type="submit">PDF + Newsletter anfordern</button>
+        <div style="font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--ink-soft); margin-top: 8px; line-height: 1.5; font-weight: 700;">Mit dem Absenden stimmst du der Datenschutzerklärung zu · Newsletter 2 ×/Monat · jederzeit abmeldbar</div>
       </form>
       <div class="spur-meta">PDF kommt sofort · Newsletter 2 ×/Mo · jederzeit abmeldbar</div>
     </div>
@@ -445,6 +447,7 @@
 <script>
 (function() {
   const CAL_URL = 'https://www.cal.eu/dustin-vogler/erstgesprach';
+  const BREVO_FORM_ACTION = 'https://3bcac9c4.sibforms.com/serve/MUIFAESp9-E9CCrD98pgmDLGnNbJNrK2OLVxEGuzGwp3unbtERAA3ycwxolWs3-FIBO7cPY81ZEqjPZWqOcpCxWQDuGXpVZApJ7FZ6qprNbaMctPiVALmpnOJ7ATcW8OPH0fXAPNmthL8PCanXOS9nXtu7Evobf3cyHyvu05KjZBDHGhLuen5QGnWZBZ96a7NeKdDxSOKMNcupLNBQ==';
 
   const questions = [
     { id: 'q01', label: 'Reaktionszeit auf Inbound-Lead', frame: 'Wie schnell reagiert der Vertrieb auf einen Inbound-Lead?',
@@ -894,14 +897,55 @@
     e.preventDefault();
     document.getElementById('pdf-form').classList.toggle('active');
   });
-  document.getElementById('pdf-form').addEventListener('submit', (e) => {
+  document.getElementById('pdf-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = document.getElementById('pdf-name').value;
-    const email = document.getElementById('pdf-email').value;
-    console.log('PDF-Form Submit:', { name, email, score: state.answers, branche: state.branche });
-    showToast('Bericht unterwegs zu ' + email);
-    e.target.reset();
-    e.target.classList.remove('active');
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalLabel = submitBtn.textContent;
+    submitBtn.textContent = 'Sende ...';
+    submitBtn.disabled = true;
+
+    const total = calculateScore();
+    const stufe = calculateStufe(total).stufe;
+    const compound = calculateCompound();
+
+    const formData = new FormData();
+    formData.append('VORNAME', document.getElementById('pdf-name').value);
+    formData.append('EMAIL', document.getElementById('pdf-email').value);
+    formData.append('COMPANY', document.getElementById('pdf-company-spur2').value || '');
+
+    // Hidden Custom Attributes — werden auf Brevo Custom Attributes gemappt
+    formData.append('SCORE', total);
+    formData.append('STUFE', stufe);
+    formData.append('BRANCHE', state.branche);
+    formData.append('UMSATZ', state.umsatz);
+    formData.append('MITARBEITER', state.ma);
+    formData.append('GEO', state.geo);
+    formData.append('COMPOUND_LOSS', formatEuroPlain(compound.amount));
+    formData.append('LEAD_SOURCE', 'pipeline-diagnose-tool');
+
+    // Brevo-Pflichtfelder (Honeypot + Locale)
+    formData.append('email_address_check', '');
+    formData.append('locale', 'de');
+
+    try {
+      await fetch(BREVO_FORM_ACTION, {
+        method: 'POST',
+        body: formData,
+        mode: 'no-cors',
+      });
+      showToast('Bestätigungs-Mail unterwegs · prüfe dein Postfach');
+      e.target.reset();
+      e.target.classList.remove('active');
+    } catch (err) {
+      showToast('Fehler beim Senden · bitte erneut versuchen');
+    } finally {
+      submitBtn.textContent = originalLabel;
+      submitBtn.disabled = false;
+    }
+
+    if (typeof gtag === 'function') {
+      gtag('event', 'pipeline_diagnose_pdf_request', { score: total, stufe, branche: state.branche });
+    }
   });
 
   // PDF-Export
