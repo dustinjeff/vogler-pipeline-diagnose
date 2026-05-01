@@ -897,7 +897,7 @@
     e.preventDefault();
     document.getElementById('pdf-form').classList.toggle('active');
   });
-  document.getElementById('pdf-form').addEventListener('submit', async (e) => {
+  document.getElementById('pdf-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const submitBtn = e.target.querySelector('button[type="submit"]');
     const originalLabel = submitBtn.textContent;
@@ -913,7 +913,7 @@
     formData.append('EMAIL', document.getElementById('pdf-email').value);
     formData.append('COMPANY', document.getElementById('pdf-company-spur2').value || '');
 
-    // Hidden Custom Attributes — werden auf Brevo Custom Attributes gemappt
+    // Hidden Custom Attributes
     formData.append('SCORE', total);
     formData.append('STUFE', stufe);
     formData.append('BRANCHE', state.branche);
@@ -923,25 +923,25 @@
     formData.append('COMPOUND_LOSS', formatEuroPlain(compound.amount));
     formData.append('LEAD_SOURCE', 'pipeline-diagnose-tool');
 
-    // Brevo-Pflichtfelder (Honeypot + Locale)
+    // Brevo-Pflichtfelder
     formData.append('email_address_check', '');
     formData.append('locale', 'de');
 
-    try {
-      await fetch(BREVO_FORM_ACTION, {
-        method: 'POST',
-        body: formData,
-        mode: 'no-cors',
-      });
+    // Fire-and-forget · no-cors kann lange hängen, daher nicht awaiten
+    fetch(BREVO_FORM_ACTION, {
+      method: 'POST',
+      body: formData,
+      mode: 'no-cors',
+    }).catch(err => console.error('Brevo submit error:', err));
+
+    // Sofort UI-Feedback (Brevo bestätigt eh per E-Mail)
+    setTimeout(() => {
       showToast('Bestätigungs-Mail unterwegs · prüfe dein Postfach');
       e.target.reset();
       e.target.classList.remove('active');
-    } catch (err) {
-      showToast('Fehler beim Senden · bitte erneut versuchen');
-    } finally {
       submitBtn.textContent = originalLabel;
       submitBtn.disabled = false;
-    }
+    }, 600);
 
     if (typeof gtag === 'function') {
       gtag('event', 'pipeline_diagnose_pdf_request', { score: total, stufe, branche: state.branche });
