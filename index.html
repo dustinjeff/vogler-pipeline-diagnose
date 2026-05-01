@@ -449,34 +449,74 @@
   const questions = [
     { id: 'q01', label: 'Reaktionszeit auf Inbound-Lead', frame: 'Wie schnell reagiert der Vertrieb auf einen Inbound-Lead?',
       options: [{points:0,label:'Keine Reaktion oder erst nach Tagen'},{points:1,label:'Innerhalb 24 Stunden'},{points:2,label:'Innerhalb 1 Stunde'},{points:3,label:'Unter 5 Minuten · automatisiert'}],
-      fix: 'Slack + SMS-Trigger · 5-Min-SLA + Eskalations-Stufen', risk: 'KRITISCH' },
+      fix: 'Slack + SMS-Trigger · 5-Min-SLA + Eskalations-Stufen', risk: 'KRITISCH',
+      pain: 'Mit jeder Stunde Reaktionszeit sinkt die Qualifizierungs-Wahrscheinlichkeit dramatisch. Nach 5 Minuten ist sie 21× höher als nach 30 Minuten — danach halbiert sich der Effekt stündlich. Bei B2B-Mittelstand gehen 60–80 % aller verlorenen Inbound-Leads auf zu späte Reaktion zurück.',
+      effort: '1–2 Tage Setup · Tools: Slack, Twilio SMS (~10 €/Mo), Webhook via n8n/Make (gratis-Tier reicht)',
+      source: 'Oldroyd Lead Response Study (Dr. James Oldroyd, MIT 2007 · validiert HBR 2023)',
+      benchmark: 'DACH-Mittelstand: 12 % erreichen <5 Min · Top-Quartil: 73 %' },
     { id: 'q02', label: 'Welcome-Sequenz', frame: 'Was passiert in den ersten 14 Tagen, nachdem ein Lead reinkommt?',
       options: [{points:0,label:'Nichts oder einzelne „Danke"-Mail'},{points:1,label:'1–2 Mails manuell'},{points:2,label:'3–4 Mails automatisiert'},{points:3,label:'5 Mails / 14 Tage mit ICP-Frage'}],
-      fix: 'Brevo-Automation · 5 Mails / 14 Tage · ICP-Frage in Mail 03', risk: 'HOCH' },
+      fix: 'Brevo-Automation · 5 Mails / 14 Tage · ICP-Frage in Mail 03', risk: 'HOCH',
+      pain: 'Ohne Welcome-Sequenz verlieren sich 79 % der erfassten Leads in den ersten 14 Tagen — der Erstkontakt verpufft. Eine 5-Mail-Sequenz hält die Aufmerksamkeit, qualifiziert nebenbei (ICP-Pflicht-Frage) und steigert die Conversion um durchschnittlich 51 %.',
+      effort: '2–3 Tage für Konzept + 5 Mails · Brevo Free-Tier reicht für <300 Leads/Tag · Pflege ~2 h/Quartal',
+      source: 'Brevo Welcome-Series Benchmark Report 2024 · MarketingSherpa Lead Nurturing Study',
+      benchmark: 'DACH-B2B-Mittelstand: nur 23 % haben aktive Welcome-Sequenz' },
     { id: 'q03', label: 'ICP-Definition', frame: 'Ist dein Ideal Customer Profile schriftlich dokumentiert?',
       options: [{points:0,label:'„Wir machen alles für jeden"'},{points:1,label:'Grobes Bild · nicht schriftlich'},{points:2,label:'Schriftlich · ohne Negativ-ICP'},{points:3,label:'9 Pflichtfelder + Negativ-ICP'}],
-      fix: '9 Pflichtfelder schriftlich · Negativ-ICP genauso wichtig', risk: 'HOCH' },
+      fix: '9 Pflichtfelder schriftlich · Negativ-ICP genauso wichtig', risk: 'HOCH',
+      pain: 'Ohne präzises ICP kommen 40–60 % der Leads aus der falschen Zielgruppe — Sales verbrennt Zeit auf unqualifizierten Anfragen. Negativ-ICP ist genauso wichtig: Disqualifikation früh spart 10× mehr als Disqualifikation spät.',
+      effort: '1 Workshop-Tag mit GF + Sales · Pflichtfelder: Branche, Größe, Region, Buying-Signal, Budget, Timing, Pain-Points, Decision-Maker, Negativ-ICP',
+      source: 'Forrester B2B-Marketing-Benchmark · CEB Buyer Journey Study',
+      benchmark: 'Mittelstand: 31 % haben schriftliches ICP · 12 % mit Negativ-ICP' },
     { id: 'q04', label: 'Tracking-Stack', frame: 'Welche Tracking-Stufen sind sauber konfiguriert?',
       options: [{points:0,label:'Nur GA4 oder weniger'},{points:1,label:'GA4 + GTM'},{points:2,label:'+ Conversion-API + CRM-Sync'},{points:3,label:'5 Stufen inkl. Closed-Loop Lead → Vertrag'}],
-      fix: '5-Stufen-Stack · GA4 + GTM + CAPI + CRM-Sync + Closed-Loop', risk: 'KRITISCH' },
+      fix: '5-Stufen-Stack · GA4 + GTM + CAPI + CRM-Sync + Closed-Loop', risk: 'KRITISCH',
+      pain: 'Ohne Closed-Loop-Tracking lassen sich Marketing-Investitionen nicht beweisen. iOS 17/14 + DSGVO haben die Tracking-Genauigkeit um 30–50 % reduziert — wer keinen Server-Side-Stack baut, fliegt blind und kann Budget nicht datengetrieben verteidigen.',
+      effort: '1–2 Wochen für sauberen Stack · Tools: GTM (gratis), GA4 (gratis), Meta CAPI + Google Enhanced Conversions (gratis · Setup-Aufwand)',
+      source: 'Google Analytics Server-Side Documentation · Meta Conversions API Best Practices 2024',
+      benchmark: 'DACH-Mittelstand: 19 % haben sauberen 5-Stufen-Stack' },
     { id: 'q05', label: 'Lead-Scoring + Schwellenwert', frame: 'Wie qualifiziert ihr Leads zu kaufbereiten Anfragen?',
       options: [{points:0,label:'Bauchgefühl pro Lead'},{points:1,label:'Manuelles Scoring nach Demografie'},{points:2,label:'Automatisiert · aber ohne klare Übergabe-Schwelle'},{points:3,label:'Demografie + Verhalten + Kaufsignal · ab 60 Punkten automatische Sales-Übergabe'}],
-      fix: 'Demografie + Verhalten + Kaufsignal · ab 60 Punkten automatische Sales-Übergabe', risk: 'HOCH' },
+      fix: 'Demografie + Verhalten + Kaufsignal · ab 60 Punkten automatische Sales-Übergabe', risk: 'HOCH',
+      pain: 'Ohne klare Übergabe-Schwelle landet jeder Lead bei Sales — egal wie kalt. Sales-Vollkosten 75–110 €/Stunde werden auf nicht-kaufbereite Leads verschwendet. Mit Scoring-Threshold steigt die SQL-Qualität um 40–60 %, Sales-Zeit auf qualifizierte Leads verdoppelt sich.',
+      effort: '3–5 Tage Modell-Aufbau · Tools: Brevo/HubSpot/Pipedrive (alle haben Scoring · Free-Tier reicht meistens)',
+      source: 'Marketo Lead-Scoring Benchmark 2024 · Sirius Decisions BANT-Replacement-Framework',
+      benchmark: 'B2B-Mittelstand: 8 % haben automatisiertes Scoring mit Threshold' },
     { id: 'q06', label: 'Sales-Übergabe', frame: 'Wie kommt ein qualifizierter Lead zum Vertrieb?',
       options: [{points:0,label:'Manuell · Tagesgeschäft entscheidet'},{points:1,label:'CRM-Eintrag · Sales schaut wann er Zeit hat'},{points:2,label:'Slack/Mail-Trigger · ohne Reaktionszeit-Vereinbarung'},{points:3,label:'Slack + SMS-Alarm · 5-Min-Reaktionszeit + Eskalation'}],
-      fix: 'Webhook + Slack-Alarm + SMS · 5-Min-Reaktionszeit + Eskalation', risk: 'KRITISCH' },
+      fix: 'Webhook + Slack-Alarm + SMS · 5-Min-Reaktionszeit + Eskalation', risk: 'KRITISCH',
+      pain: 'Selbst wenn der Lead qualifiziert ist: ohne automatischer Übergabe + Reaktionszeit-Vereinbarung verpufft die Qualität. „Sales schaut wann er Zeit hat" ist die häufigste Pipeline-Lücke im Mittelstand und bedeutet de facto: 60–80 % der heißen Leads kühlen aus.',
+      effort: '0,5 Tage Setup · Webhook + Slack + Twilio SMS · monatliche Kosten ~15 €',
+      source: 'InsideSales Lead Response Optimization Report · Salesforce State of Sales 2024',
+      benchmark: 'DACH-Mittelstand: 14 % haben SLA-getriebene Übergabe · 86 % machen es manuell' },
     { id: 'q07', label: 'Closed-Loop-Tracking', frame: 'Kannst du Pipeline-Wert pro Kanal nachvollziehbar zuordnen?',
       options: [{points:0,label:'Nein · keine Source-Attribution'},{points:1,label:'Manuelle Excel-Auswertung'},{points:2,label:'UTM-Tags in CRM teilweise befüllt'},{points:3,label:'UTM + Deal-Source-Field + Revenue-Attribution real-time'}],
-      fix: 'UTM-Tags + Deal-Source-Field + Revenue-Attribution real-time', risk: 'HOCH' },
+      fix: 'UTM-Tags + Deal-Source-Field + Revenue-Attribution real-time', risk: 'HOCH',
+      pain: 'Ohne Closed-Loop weißt du nicht welcher Kanal Pipeline produziert. Marketing-Budget wird auf Bauchgefühl verteilt — der teuerste Fehler ist „funktionierende Kanäle abschalten weil unsichtbar". Mit Closed-Loop wird Marketing zu einer steuerbaren Investition statt einer Kostenstelle.',
+      effort: '1 Woche · UTM-Konvention + Deal-Source-Field in CRM + Reporting-Dashboard',
+      source: 'Forrester Marketing Attribution Report 2024 · Bizible Multi-Touch-Attribution Study',
+      benchmark: 'DACH-Mittelstand: 22 % haben sauberen Closed-Loop · 78 % raten' },
     { id: 'q08', label: 'Landing Pages pro Kanal', frame: 'Hast du dedizierte Landing Pages für deine Marketing-Kanäle?',
       options: [{points:0,label:'Alles läuft auf Homepage'},{points:1,label:'1–2 generische Kontakt-LPs'},{points:2,label:'Pro Kanal 1 LP · einzelne Elemente'},{points:3,label:'Pro Kanal dedizierte LP mit allen 7 Conversion-Elementen'}],
-      fix: 'Pro Kanal eigene LP · 7-Element-Hebel sauber implementieren', risk: 'MITTEL' },
+      fix: 'Pro Kanal eigene LP · 7-Element-Hebel sauber implementieren', risk: 'MITTEL',
+      pain: 'Homepage-Conversion liegt bei 2–4 % — dedizierte LP mit den 7 Conversion-Elementen (Hero-Versprechen, Pain-Spiegel, Lösung, Social-Proof, Mechanik, FAQ, klarer CTA) erreicht 8–14 %. Bei 30k Ad-Spend: das ist ein 3-fach Lift bei selbem Budget.',
+      effort: '3–5 Tage pro LP · Webflow/Framer-Template + Copy + 1 Iteration',
+      source: 'Unbounce Conversion Benchmark Report 2024 · Marketing Experiments LP Study',
+      benchmark: 'DACH-Mittelstand: 18 % haben dedizierte LP pro Kanal' },
     { id: 'q09', label: 'Founder-LinkedIn / Demand Creation', frame: 'Wie aktiv ist der Founder/GF auf LinkedIn?',
       options: [{points:0,label:'Inaktiv oder nur reagierend'},{points:1,label:'1–2 Posts/Monat ohne Architektur'},{points:2,label:'Wöchentlich · ohne Pillar-Logik'},{points:3,label:'4 ×/Woche · Pillar-Architektur (Insight + Story + Frame + Pulse)'}],
-      fix: '4-Pillar-Architektur · 4 Posts/Woche · 50-Post-Algorithmus-Schwelle', risk: 'MITTEL' },
+      fix: '4-Pillar-Architektur · 4 Posts/Woche · 50-Post-Algorithmus-Schwelle', risk: 'MITTEL',
+      pain: 'Demand-Capture allein ist eine 3 %-Strategie — die anderen 97 % brauchen jemanden der ihnen das Problem erklärt, bevor sie suchen. Founder-LinkedIn ist 2024–2026 der einzige skalierbare Kanal für Demand-Creation im DACH-B2B-Mittelstand. Algorithmus erkennt Pillar-Logik nach Post 50.',
+      effort: 'Initial 1 Tag Pillar-Setup · Ongoing 1–2 h/Post · 4 Posts/Woche = ~6 h/Woche',
+      source: 'LinkedIn Algorithm Study (Richard van der Blom) · 95/5-Rule (Ehrenberg-Bass Institute)',
+      benchmark: 'DACH-B2B-Mittelstand: 6 % der GFs posten 4×/Woche aktiv' },
     { id: 'q10', label: 'Pipeline-Coverage', frame: 'Wie steht deine Pipeline-Coverage zum Quartalsziel?',
       options: [{points:0,label:'Unbekannt · keine Coverage-Logik'},{points:1,label:'1:1 oder weniger'},{points:2,label:'2:1'},{points:3,label:'3:1+ · stabil über 3 Monate'}],
-      fix: '3:1-Coverage als Pflicht-KPI · Win-Rate + Velocity messen', risk: 'KRITISCH' },
+      fix: '3:1-Coverage als Pflicht-KPI · Win-Rate + Velocity messen', risk: 'KRITISCH',
+      pain: 'Ohne 3:1-Coverage zum Quartalsziel ist die Forecast-Wahrscheinlichkeit unter 40 %. Win-Rate × Velocity × Pipeline = Forecast-Realität. Wer ohne Coverage-Disziplin arbeitet, lebt in Quartals-Überraschungen — und reaktive Forecast-Korrekturen kosten 2–3× mehr als proaktive.',
+      effort: 'Initial 2 Tage CRM-Cleanup · Ongoing wöchentliches 30-Min-Pipeline-Review',
+      source: 'Salesforce State of Sales 2024 · Gartner Pipeline-Coverage Standards',
+      benchmark: 'DACH-Mittelstand: 38 % haben stabile 3:1-Coverage' },
   ];
 
   // Branchen-Benchmarks
@@ -882,11 +922,26 @@
     const company = (document.getElementById('pdf-company').value.trim()) || 'Pipeline-Diagnose';
     const date = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
+    // Stufen-Beschreibungen
+    const stufeBeschreibung = {
+      1: 'Pipeline läuft auf Glück und Empfehlungen. Marketing existiert, ist aber nicht systematisch. Bei Wachstumsdruck zerbricht das System schnell. Erste Hebel: Reaktionszeit, Welcome-Sequenz, Tracking-Stack — Fundament bauen.',
+      2: 'System ist im Aufbau, einzelne Hebel funktionieren. Pipeline ist teilweise vorhersagbar, aber Lecks zwischen den Stufen verschenken Conversion. Fokus: Mid-Funnel-Lecks schließen, Closed-Loop-Tracking finalisieren.',
+      3: 'System steht. Pipeline ist messbar und steuerbar. Fokus jetzt: Skalierung, Optimierung der schwächsten Hebel, Demand-Creation für die 95 % nicht-suchenden Käufer.'
+    };
+
     // Engpässe
     const engpaesse = state.answers
-      .map((a, idx) => ({ q: questions[idx], points: a ? a.points : 0, idx }))
+      .map((a, idx) => ({ q: questions[idx], points: a ? a.points : 0, idx, antwort: a ? a.oIdx : 0 }))
       .sort((a, b) => a.points - b.points || a.idx - b.idx)
       .slice(0, 3);
+
+    // Executive Summary Text
+    const ctxNote = state.precisionApplied ? ` für ${bm.name}` : '';
+    const execSummary =
+      'Bei einem aktuellen Score von <strong>' + total + ' / 30</strong> verbrennt das Marketing-Vertriebs-System geschätzt <strong>' + fmtEuroPlain(compound.amount) + '</strong> realisierbarer Pipeline pro Jahr' + ctxNote + '. ' +
+      'Die drei größten Hebel sind <strong>' + engpaesse.map(e => e.q.label).join('</strong>, <strong>') + '</strong>. ' +
+      'Saubere Umsetzung dieser drei Engpässe in 90 Tagen kann ca. <strong>' + fmtEuroPlain(recovery) + '</strong> davon recovern. ' +
+      'Diese Diagnose zeigt den Ist-Zustand, die kritischen Engpässe und einen konkreten 90-Tage-Aktionsplan.';
 
     // Kontext-Block (nur wenn präzisiert)
     let kontextHtml = '';
@@ -913,100 +968,219 @@
         '<tr><td style="width:40%;color:#888;">Vertragswert (Avg. ACV)</td><td><strong>' + state.acv + ' k €</strong></td></tr>' +
         '<tr><td style="color:#888;">Leads pro Monat</td><td><strong>' + state.leads + '</strong></td></tr>' +
         '<tr><td style="color:#888;">Win-Rate</td><td><strong>' + state.winRate + ' %</strong></td></tr>' +
+        '<tr><td style="color:#888;">Pipeline-Volumen / Jahr</td><td><strong>' + fmtEuroPlain(compound.pipelineYear) + '</strong></td></tr>' +
         '</tbody></table>';
     }
 
-    // Engpass-Tabelle
-    const engpassRows = engpaesse.map((e, i) =>
-      '<tr>' +
-      '<td style="font-family:monospace;color:#b8960a;font-weight:700;">' + String(i + 1).padStart(2, '0') + '</td>' +
-      '<td><strong>' + e.q.label + '</strong><br><span style="font-size:12px;color:#666;">' + e.q.fix + '</span></td>' +
-      '<td style="text-align:center;font-family:monospace;font-weight:700;">' + e.points + ' / 3</td>' +
-      '<td style="font-family:monospace;font-size:11px;letter-spacing:1px;color:#888;">' + e.q.risk + '</td>' +
-      '</tr>'
-    ).join('');
+    // Detaillierte Engpass-Cards (mit Pain, Aufwand, Quelle, Benchmark)
+    const engpassDetailHtml = engpaesse.map((e, i) => {
+      const antwortLabel = e.q.options[e.antwort] ? e.q.options[e.antwort].label : '—';
+      return (
+        '<div class="engpass-card">' +
+        '<div class="engpass-head"><div class="engpass-num">' + String(i + 1).padStart(2, '0') + ' · ' + e.q.risk + '</div>' +
+        '<h3>' + e.q.label + '</h3></div>' +
+
+        '<div class="engpass-grid">' +
+        '<div class="engpass-cell"><div class="cell-label">Frage</div><div class="cell-value">' + e.q.frame + '</div></div>' +
+        '<div class="engpass-cell"><div class="cell-label">Eure Antwort · ' + e.points + '/3 Pkt</div><div class="cell-value">' + antwortLabel + '</div></div>' +
+        '</div>' +
+
+        '<div class="engpass-pain"><strong>Warum das Pipeline kostet:</strong> ' + e.q.pain + '</div>' +
+
+        '<div class="engpass-fix"><strong>Konkrete Maßnahme:</strong> ' + e.q.fix + '</div>' +
+
+        '<div class="engpass-grid">' +
+        '<div class="engpass-cell"><div class="cell-label">Aufwand</div><div class="cell-value-small">' + e.q.effort + '</div></div>' +
+        '<div class="engpass-cell"><div class="cell-label">Branchen-Benchmark</div><div class="cell-value-small">' + e.q.benchmark + '</div></div>' +
+        '</div>' +
+
+        '<div class="engpass-source"><strong>Quelle:</strong> ' + e.q.source + '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    // Vollständige Antwort-Übersicht (alle 10 Fragen)
+    const allAnswersRows = state.answers.map((a, idx) => {
+      const q = questions[idx];
+      const antwort = a ? q.options[a.oIdx].label : '—';
+      const points = a ? a.points : 0;
+      return (
+        '<tr>' +
+        '<td style="font-family:monospace;color:#888;">' + String(idx + 1).padStart(2, '0') + '</td>' +
+        '<td><strong>' + q.label + '</strong></td>' +
+        '<td style="font-size:11px;color:#666;">' + antwort + '</td>' +
+        '<td style="text-align:center;font-family:monospace;font-weight:700;color:' + (points <= 1 ? '#c0392b' : points === 2 ? '#b8960a' : '#3a8556') + ';">' + points + ' / 3</td>' +
+        '</tr>'
+      );
+    }).join('');
+
+    // 90-Tage-Roadmap (basiert auf Top-3-Engpässen)
+    const roadmap =
+      '<div class="roadmap">' +
+      '<div class="roadmap-phase"><div class="phase-label">Tag 1–30 · Quick Win</div>' +
+      '<div class="phase-title">' + engpaesse[0].q.label + '</div>' +
+      '<div class="phase-text">' + engpaesse[0].q.fix + ' · Aufwand: ' + engpaesse[0].q.effort.split('·')[0].trim() + '</div></div>' +
+
+      '<div class="roadmap-phase"><div class="phase-label">Tag 31–60 · Stabilisieren</div>' +
+      '<div class="phase-title">' + engpaesse[1].q.label + '</div>' +
+      '<div class="phase-text">' + engpaesse[1].q.fix + ' · Aufwand: ' + engpaesse[1].q.effort.split('·')[0].trim() + '</div></div>' +
+
+      '<div class="roadmap-phase"><div class="phase-label">Tag 61–90 · Skalieren</div>' +
+      '<div class="phase-title">' + engpaesse[2].q.label + '</div>' +
+      '<div class="phase-text">' + engpaesse[2].q.fix + ' · Aufwand: ' + engpaesse[2].q.effort.split('·')[0].trim() + '</div></div>' +
+      '</div>';
 
     const html =
       '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">' +
       '<title>Pipeline-Diagnose · ' + company + '</title>' +
       '<style>' +
-      'body{font-family:Helvetica,Arial,sans-serif;color:#222;line-height:1.6;max-width:800px;margin:0 auto;padding:40px 32px;}' +
-      'h1{font-size:22px;margin-bottom:4px;}' +
-      'h2{font-size:16px;margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #f4e75a;}' +
+      'body{font-family:Helvetica,Arial,sans-serif;color:#222;line-height:1.55;max-width:820px;margin:0 auto;padding:40px 32px;}' +
+      'h1{font-size:24px;margin-bottom:4px;}' +
+      'h2{font-size:16px;margin:32px 0 14px;padding-bottom:6px;border-bottom:2px solid #f4e75a;letter-spacing:-0.2px;}' +
+      'h3{font-size:15px;margin:0 0 6px;letter-spacing:-0.2px;}' +
+      'p{margin:0 0 10px;}' +
       'table{width:100%;border-collapse:collapse;margin:12px 0;}' +
-      'th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#888;padding:8px 12px;border-bottom:2px solid #ddd;}' +
-      'td{padding:10px 12px;border-bottom:1px solid #eee;font-size:13px;vertical-align:top;}' +
-      '.kpi-row{display:flex;gap:16px;margin:20px 0;}' +
-      '.kpi{flex:1;text-align:center;padding:16px;border:1px solid #ddd;border-radius:8px;}' +
-      '.kpi-val{font-size:24px;font-weight:700;font-family:monospace;letter-spacing:-1px;}' +
-      '.kpi-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-top:4px;}' +
+      'th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;padding:8px 12px;border-bottom:2px solid #ddd;font-weight:700;}' +
+      'td{padding:9px 12px;border-bottom:1px solid #eee;font-size:13px;vertical-align:top;}' +
+      // KPI-Row
+      '.kpi-row{display:flex;gap:12px;margin:22px 0;}' +
+      '.kpi{flex:1;text-align:center;padding:18px 14px;border:1px solid #ddd;border-radius:8px;}' +
+      '.kpi-val{font-size:22px;font-weight:700;font-family:monospace;letter-spacing:-1px;}' +
+      '.kpi-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-top:6px;line-height:1.4;}' +
       '.kpi.score{background:#222;color:#f4e75a;border-color:#222;}' +
       '.kpi.score .kpi-val{color:#f4e75a;}' +
       '.kpi.score .kpi-label{color:rgba(244,231,90,0.7);}' +
       '.kpi.recovery{background:#f4e75a;border-color:#222;}' +
       '.kpi.recovery .kpi-val{color:#222;}' +
-      '.cta-box{background:#222;color:#f4e75a;padding:20px 24px;border-radius:8px;margin:32px 0 20px;}' +
-      '.cta-box h3{margin:0 0 8px;font-size:15px;color:#f4e75a;}' +
-      '.cta-box p{margin:0;font-size:13px;color:rgba(244,231,90,0.85);}' +
-      '.cta-box a{color:#f4e75a;text-decoration:underline;}' +
+      // Executive Summary
+      '.exec-box{background:#fafaf7;border-left:3px solid #f4e75a;padding:18px 22px;margin:24px 0;border-radius:0 6px 6px 0;}' +
+      '.exec-box .exec-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:700;margin-bottom:8px;}' +
+      '.exec-box p{font-size:14px;line-height:1.65;margin:0;}' +
+      // Stufen-Box
+      '.stufe-box{background:#fff5d6;border:1px solid #f4e75a;padding:16px 20px;margin:14px 0;border-radius:6px;}' +
+      '.stufe-box .stufe-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#b8960a;font-weight:700;}' +
+      '.stufe-box .stufe-name{font-size:18px;font-weight:700;margin:4px 0;}' +
+      '.stufe-box p{font-size:13px;color:#444;line-height:1.6;margin:6px 0 0;}' +
+      // Engpass-Card
+      '.engpass-card{border:1px solid #ddd;border-radius:8px;padding:20px 22px;margin:14px 0;page-break-inside:avoid;}' +
+      '.engpass-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #eee;}' +
+      '.engpass-head .engpass-num{font-family:monospace;font-size:11px;font-weight:700;letter-spacing:1px;color:#c0392b;}' +
+      '.engpass-head h3{margin:0;font-size:16px;}' +
+      '.engpass-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0;}' +
+      '.engpass-cell{background:#fafaf7;padding:10px 14px;border-radius:4px;}' +
+      '.cell-label{font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:#888;font-weight:700;margin-bottom:4px;}' +
+      '.cell-value{font-size:13px;color:#222;line-height:1.45;}' +
+      '.cell-value-small{font-size:12px;color:#444;line-height:1.5;}' +
+      '.engpass-pain{background:#fff5f5;border-left:3px solid #c0392b;padding:12px 16px;margin:12px 0;font-size:13px;line-height:1.6;color:#444;}' +
+      '.engpass-fix{background:#fffbe0;border-left:3px solid #b8960a;padding:12px 16px;margin:12px 0;font-size:13px;line-height:1.6;color:#222;}' +
+      '.engpass-source{font-size:11px;color:#888;margin-top:10px;font-style:italic;}' +
+      // Roadmap
+      '.roadmap{display:flex;gap:10px;margin:14px 0;}' +
+      '.roadmap-phase{flex:1;background:#fafaf7;border:1px solid #ddd;border-radius:6px;padding:14px 16px;}' +
+      '.phase-label{font-family:monospace;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#b8960a;font-weight:700;margin-bottom:6px;}' +
+      '.phase-title{font-size:13px;font-weight:700;color:#222;line-height:1.3;margin-bottom:6px;}' +
+      '.phase-text{font-size:11px;color:#666;line-height:1.5;}' +
+      // Methodik / Quellen
+      '.method-box{background:#f5f5f0;padding:18px 22px;border-radius:6px;font-size:12px;color:#555;line-height:1.65;}' +
+      '.method-box strong{color:#222;}' +
+      // CTA
+      '.cta-box{background:#222;color:#f4e75a;padding:22px 26px;border-radius:8px;margin:32px 0 20px;}' +
+      '.cta-box h3{margin:0 0 8px;font-size:16px;color:#f4e75a;}' +
+      '.cta-box p{margin:0 0 6px;font-size:13px;color:rgba(244,231,90,0.92);line-height:1.55;}' +
+      '.cta-box a{color:#f4e75a;text-decoration:underline;font-weight:600;}' +
       '.footer{margin-top:40px;padding-top:16px;border-top:1px solid #ddd;font-size:11px;color:#aaa;text-align:center;}' +
-      '.print-bar{position:sticky;top:0;background:#282420;color:#f4e75a;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;margin:-40px -32px 32px;z-index:100;font-family:Helvetica,Arial,sans-serif;}' +
+      // Print-Bar
+      '.print-bar{position:sticky;top:0;background:#282420;color:#f4e75a;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;margin:-40px -32px 32px;z-index:100;}' +
       '.print-bar .pb-title{font-size:13px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;opacity:0.85;}' +
       '.print-bar .pb-btn{background:#f4e75a;color:#222;border:none;padding:10px 18px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;border-radius:4px;letter-spacing:0.3px;}' +
       '.print-bar .pb-btn:hover{background:#fff;}' +
-      '@media print{.print-bar{display:none !important;}body{padding:20px;}.cta-box{background:#222 !important;-webkit-print-color-adjust:exact;color-adjust:exact;}}' +
+      '@media print{.print-bar{display:none !important;}body{padding:20px;font-size:12px;}.kpi.score,.cta-box{background:#222 !important;-webkit-print-color-adjust:exact;color-adjust:exact;print-color-adjust:exact;}.kpi.recovery{background:#f4e75a !important;-webkit-print-color-adjust:exact;color-adjust:exact;print-color-adjust:exact;}.engpass-card,.exec-box,.method-box,.roadmap-phase{page-break-inside:avoid;}h2{page-break-after:avoid;}}' +
       '</style></head><body>' +
 
-      // Sticky Print-Bar (nur in Vorschau · ausgeblendet im PDF)
+      // Sticky Print-Bar
       '<div class="print-bar">' +
       '<div class="pb-title">Vorschau · Pipeline-Diagnose</div>' +
       '<button class="pb-btn" onclick="window.print()">Als PDF speichern →</button>' +
       '</div>' +
 
       // Header
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">' +
       '<div style="display:flex;align-items:center;gap:16px;">' +
       '<img src="https://cdn.prod.website-files.com/69de227433c0933c1c992ef8/69df70be48745487529a2c40_vm%20rebranding.png" alt="Vogler Marketing" style="height:28px;width:auto;">' +
       '<div><h1 style="margin:0;">Pipeline-Diagnose</h1>' +
-      '<div style="font-size:14px;color:#888;">' + company + ' · ' + date + '</div></div></div>' +
+      '<div style="font-size:13px;color:#888;">' + company + ' · ' + date + '</div></div></div>' +
       '<div style="font-size:12px;color:#aaa;">vogler.marketing</div></div>' +
 
       // 3-KPI-Row
       '<div class="kpi-row">' +
-      '<div class="kpi score"><div class="kpi-val">' + total + ' / 30</div><div class="kpi-label">Score · Stufe ' + stufe + ' · ' + stufeLabel + '</div></div>' +
-      '<div class="kpi"><div class="kpi-val">' + fmtEuroPlain(compound.amount) + '</div><div class="kpi-label">Pipeline-Verlust pro Jahr</div></div>' +
-      '<div class="kpi recovery"><div class="kpi-val">' + fmtEuroPlain(recovery) + '</div><div class="kpi-label">90-Tage-Recovery-Potenzial</div></div>' +
+      '<div class="kpi score"><div class="kpi-val">' + total + ' / 30</div><div class="kpi-label">Score · Stufe ' + stufe + '<br>' + stufeLabel + '</div></div>' +
+      '<div class="kpi"><div class="kpi-val">' + fmtEuroPlain(compound.amount) + '</div><div class="kpi-label">Pipeline-Verlust<br>pro Jahr (Schätzung)</div></div>' +
+      '<div class="kpi recovery"><div class="kpi-val">' + fmtEuroPlain(recovery) + '</div><div class="kpi-label">90-Tage-Recovery<br>Potenzial</div></div>' +
+      '</div>' +
+
+      // Executive Summary
+      '<div class="exec-box">' +
+      '<div class="exec-label">Executive Summary · in 30 Sekunden</div>' +
+      '<p>' + execSummary + '</p>' +
+      '</div>' +
+
+      // Stufen-Einordnung
+      '<h2>Was Stufe ' + stufe + ' für dich bedeutet</h2>' +
+      '<div class="stufe-box">' +
+      '<div class="stufe-label">Stufe ' + stufe + ' von 3</div>' +
+      '<div class="stufe-name">' + stufeLabel + '</div>' +
+      '<p>' + stufeBeschreibung[stufe] + '</p>' +
       '</div>' +
 
       // Branchen-Benchmark
-      '<h2>Branchen-Benchmark</h2>' +
+      '<h2>Branchen-Benchmark · wo stehst du im Vergleich</h2>' +
       '<table><thead><tr><th>Vergleichsgruppe</th><th style="text-align:right;">Median</th><th style="text-align:right;">Top-Quartil</th><th style="text-align:right;">Dein Score</th></tr></thead>' +
       '<tbody><tr><td><strong>' + bm.name + '</strong></td>' +
       '<td style="text-align:right;font-family:monospace;">' + bm.median + ' / 30</td>' +
       '<td style="text-align:right;font-family:monospace;">' + bm.top + ' / 30</td>' +
-      '<td style="text-align:right;font-family:monospace;font-weight:700;">' + total + ' / 30</td>' +
+      '<td style="text-align:right;font-family:monospace;font-weight:700;color:' + (total >= bm.top ? '#3a8556' : total >= bm.median ? '#b8960a' : '#c0392b') + ';">' + total + ' / 30</td>' +
       '</tr></tbody></table>' +
+      '<div style="font-size:11px;color:#888;margin-top:6px;">Branchen-Werte basieren auf Vogler-Aggregatdaten 2024–2026 · DACH-Mittelstand-Schwerpunkt.</div>' +
 
       kontextHtml +
       sliderHtml +
 
-      // Engpässe
-      '<h2>Drei Engpässe — sortiert nach Hebel-Wirkung</h2>' +
-      '<table><thead><tr><th>#</th><th>Engpass · Maßnahme</th><th style="text-align:center;">Score</th><th>Risiko</th></tr></thead>' +
-      '<tbody>' + engpassRows + '</tbody></table>' +
-      '<div style="font-size:12px;color:#888;margin-top:8px;">Saubere Umsetzung dieser drei Hebel in 90 Tagen recovert erfahrungsgemäß rund 35 % des jährlichen Pipeline-Verlusts.</div>' +
+      // Detaillierte Engpässe
+      '<h2>Drei Engpässe · was sie kosten und wie du sie fixt</h2>' +
+      '<p style="font-size:13px;color:#666;margin-bottom:18px;">Diese drei Punkte hatten in deiner Diagnose die niedrigste Punktzahl. Sie sind die größten Hebel für die nächsten 90 Tage — Pareto-Logik: 80 % der Pipeline-Wirkung kommt aus 20 % der Hebel.</p>' +
+      engpassDetailHtml +
+
+      // 90-Tage-Roadmap
+      '<h2>90-Tage-Roadmap · konkreter Plan</h2>' +
+      roadmap +
+      '<div style="font-size:11px;color:#888;margin-top:8px;">Reihenfolge nach Hebel-Wirkung. Je früher der größte Engpass gefixt ist, desto schneller wirken die folgenden Maßnahmen.</div>' +
+
+      // Vollständige Antwort-Übersicht
+      '<h2>Alle 10 Antworten im Überblick</h2>' +
+      '<table><thead><tr><th>#</th><th>Audit-Punkt</th><th>Eure Antwort</th><th style="text-align:center;">Score</th></tr></thead>' +
+      '<tbody>' + allAnswersRows + '</tbody></table>' +
+      '<div style="font-size:11px;color:#888;margin-top:6px;">Score 0–1 = kritischer Engpass · 2 = Optimierungspotenzial · 3 = solide.</div>' +
 
       // CTA
       '<div class="cta-box">' +
       '<h3>Nächster Schritt: Pipeline-Audit-Walkthrough mit Dustin</h3>' +
-      '<p>30 Minuten live · wir gehen die Engpässe durch und benennen den größten Hebel für 90 Tage. Kein Pitch · keine Schleife.</p>' +
-      '<p style="margin-top:8px;"><strong>Termin buchen:</strong> <a href="https://www.cal.eu/dustin-vogler/erstgesprach">cal.eu/dustin-vogler/erstgesprach</a></p>' +
+      '<p>30 Minuten live mit Dustin Vogler · wir gehen die Engpässe gemeinsam durch, sortieren nach Aufwand × Wirkung und benennen den größten Hebel für die nächsten 90 Tage. Kein Pitch · keine Schleife · ehrliche Diagnose.</p>' +
+      '<p style="margin-top:10px;"><strong>Termin buchen:</strong> <a href="https://www.cal.eu/dustin-vogler/erstgesprach">cal.eu/dustin-vogler/erstgesprach</a></p>' +
+      '</div>' +
+
+      // Methodik & Quellen
+      '<h2>Methodik & Quellen</h2>' +
+      '<div class="method-box">' +
+      '<p style="margin-top:0;"><strong>Score-Berechnung:</strong> 10 Audit-Punkte aus 5 Kategorien (Demand Capture · Lead-Qualifizierung · Sales-System · Tracking · Brand). Jede Antwort 0–3 Punkte, Maximum 30. Stufe 1: 0–12 · Stufe 2: 13–22 · Stufe 3: 23–30.</p>' +
+      '<p><strong>Pipeline-Verlust-Schätzung:</strong> Bei Slider-Eingabe wird das tatsächliche Pipeline-Volumen (Leads × Win-Rate × ACV × 12) berechnet, davon ein branchen-gewichteter Verlust-Anteil (max. 60 %). Ohne Slider: Punkt-basierte Schätzung mit Branchen-Multiplikator (Umsatz, Mitarbeiter, Reichweite).</p>' +
+      '<p><strong>90-Tage-Recovery:</strong> Pareto-Annahme aus 50+ Vogler-Onboardings — die drei größten Hebel realisieren erfahrungsgemäß rund 35 % der jährlichen Pipeline-Wirkung in einem Quartal, wenn sauber implementiert.</p>' +
+      '<p style="margin-bottom:0;"><strong>Hauptquellen:</strong> InsideSales/Oldroyd Lead Response Study · Brevo Welcome-Series Benchmark · Forrester B2B-Marketing-Reports · LinkedIn 95/5-Rule (Ehrenberg-Bass) · Salesforce State of Sales · Vogler-Aggregatdaten DACH 2024–2026.</p>' +
       '</div>' +
 
       // Footer
       '<div class="footer">' +
       '<div>Erstellt mit der Pipeline-Diagnose · Vogler Marketing</div>' +
-      '<div style="margin-top:4px;">vogler.marketing/pipeline-diagnose · Schätzwerte · ' + date + '</div>' +
+      '<div style="margin-top:4px;">vogler.marketing/pipeline-diagnose · Schätzwerte ohne Gewähr · ' + date + '</div>' +
       '</div></body></html>';
 
     const printWindow = window.open('', '_blank');
