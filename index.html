@@ -899,6 +899,7 @@
   });
   document.getElementById('pdf-form').addEventListener('submit', (e) => {
     e.preventDefault();
+    console.log('[PD] Submit gestartet · v3-fire-and-forget');
     const submitBtn = e.target.querySelector('button[type="submit"]');
     const originalLabel = submitBtn.textContent;
     submitBtn.textContent = 'Sende ...';
@@ -936,6 +937,7 @@
 
     // Sofort UI-Feedback (Brevo bestätigt eh per E-Mail)
     setTimeout(() => {
+      console.log('[PD] UI reset nach 600ms');
       showToast('Bestätigungs-Mail unterwegs · prüfe dein Postfach');
       e.target.reset();
       e.target.classList.remove('active');
