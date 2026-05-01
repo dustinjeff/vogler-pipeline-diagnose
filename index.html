@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vogler Marketing — Pipeline-Diagnose</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #282420;
+    --ink-soft: #6B6660;
+    --paper: #ffffff;
+    --stone: #E5DFD2;
+    --yellow: #f4e75a;
+    --line: rgba(40,36,32,0.18);
+    --line-soft: rgba(40,36,32,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Geist', system-ui, sans-serif; color: var(--ink); background: var(--paper); -webkit-font-smoothing: antialiased; line-height: 1.5; }
+  .mono { font-family: 'Geist Mono', ui-monospace, monospace; }
+  .audit-tool { max-width: 920px; margin: 0 auto; padding: 32px 24px; }
+
+  /* Header */
+  .tool-header { padding-bottom: 32px; border-bottom: 2px solid var(--ink); margin-bottom: 32px; }
+  .tool-eyebrow { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.10em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700; margin-bottom: 8px; }
+  .tool-title { font-size: clamp(28px, 4vw, 40px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; color: var(--ink); }
+  .tool-sub { font-size: 16px; color: var(--ink-soft); margin-top: 12px; line-height: 1.45; }
+
+  /* Progress */
+  .progress-wrap { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; padding: 14px 20px; background: var(--ink); color: var(--yellow); }
+  .progress-text { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; flex-shrink: 0; }
+  .progress-bar { flex: 1; height: 8px; background: rgba(244,231,90,0.15); position: relative; }
+  .progress-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--yellow); transition: width 0.3s ease; width: 0%; }
+
+  /* Questions */
+  .question { padding: 24px 0; border-bottom: 1px solid var(--line); }
+  .question:last-child { border-bottom: 0; }
+  .q-num { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--ink-soft); }
+  .q-frame { font-size: 20px; font-weight: 700; color: var(--ink); line-height: 1.3; letter-spacing: -0.01em; margin: 6px 0 16px; }
+  .q-options { display: grid; gap: 8px; }
+  .q-option { padding: 14px 18px; background: var(--paper); border: 2px solid var(--ink); cursor: pointer; display: grid; grid-template-columns: 32px 1fr 60px; align-items: center; gap: 14px; font-family: 'Geist', sans-serif; font-size: 15px; color: var(--ink); text-align: left; transition: background 0.15s ease; line-height: 1.35; }
+  .q-option:hover { background: var(--stone); }
+  .q-option.selected { background: var(--yellow); }
+  .q-option .radio { width: 22px; height: 22px; border: 2px solid var(--ink); border-radius: 50%; background: var(--paper); position: relative; flex-shrink: 0; }
+  .q-option.selected .radio::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: var(--ink); }
+  .q-option .pts { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 13px; font-weight: 700; color: var(--ink-soft); text-align: right; }
+  .q-option.selected .pts { color: var(--ink); }
+
+  /* Submit */
+  .submit-bar { position: sticky; bottom: 0; background: var(--paper); padding: 16px 0; margin-top: 32px; border-top: 2px solid var(--ink); z-index: 10; }
+  .submit-btn { width: 100%; padding: 18px 24px; background: var(--ink); color: var(--yellow); font-family: 'Geist', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; border: none; cursor: pointer; transition: opacity 0.2s ease; }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .submit-btn:not(:disabled):hover { background: var(--yellow); color: var(--ink); }
+  .submit-btn .arrow { font-family: 'Geist Mono', ui-monospace, monospace; margin-left: 12px; }
+
+  /* Output */
+  .output { margin-top: 48px; padding-top: 48px; border-top: 4px solid var(--ink); display: none; }
+  .output.visible { display: block; animation: fadeIn 0.6s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0% { background: var(--ink); } 50% { background: #3a3530; } 100% { background: var(--ink); } }
+  .pulse { animation: pulse 0.6s ease; }
+
+  /* Schätzungs-Stage Indicator */
+  .stage-indicator { display: inline-block; padding: 5px 11px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; background: var(--stone); color: var(--ink); margin-bottom: 12px; }
+  .stage-indicator.precise { background: var(--yellow); }
+  .stage-indicator.deep { background: var(--ink); color: var(--yellow); }
+
+  /* Score-Card */
+  .score-card { padding: 32px; background: var(--ink); color: var(--yellow); margin-bottom: 24px; }
+  .score-label { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.10em; text-transform: uppercase; opacity: 0.7; font-weight: 700; }
+  .score-display { display: flex; align-items: baseline; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .score-number { font-family: 'Geist Mono', ui-monospace, monospace; font-size: clamp(56px, 10vw, 96px); font-weight: 700; line-height: 1; letter-spacing: -0.05em; color: var(--yellow); }
+  .score-divider { font-family: 'Geist Mono', ui-monospace, monospace; font-size: clamp(32px, 6vw, 56px); opacity: 0.5; line-height: 1; }
+  .score-max { font-family: 'Geist Mono', ui-monospace, monospace; font-size: clamp(32px, 6vw, 56px); opacity: 0.5; line-height: 1; }
+  .stufe-badge { display: inline-block; margin-top: 16px; padding: 8px 14px; background: var(--yellow); color: var(--ink); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; }
+  .stufe-label { font-size: 18px; font-weight: 700; color: var(--yellow); margin-top: 12px; line-height: 1.4; }
+
+  /* Benchmark */
+  .benchmark { padding: 22px 26px; background: var(--paper); border: 2px solid var(--ink); margin-bottom: 16px; }
+  .benchmark-label { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.10em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700; margin-bottom: 12px; }
+  .benchmark-name { font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; line-height: 1.3; margin-bottom: 16px; }
+  .benchmark-bar { position: relative; height: 56px; background: var(--stone); border: 1.5px solid var(--ink); margin-bottom: 12px; }
+  .benchmark-track { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--ink); transform: translateY(-50%); opacity: 0.18; }
+  .benchmark-marker { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--ink); transition: left 0.4s ease; }
+  .benchmark-marker .label { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; font-weight: 700; color: var(--ink); letter-spacing: 0.04em; white-space: nowrap; }
+  .benchmark-marker .value { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 14px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .benchmark-marker.you { background: var(--yellow); width: 6px; height: 70px; top: -7px; }
+  .benchmark-marker.you .label { color: var(--ink); background: var(--yellow); padding: 2px 6px; font-size: 11px; }
+  .benchmark-rows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding-top: 32px; }
+  .benchmark-row { padding: 10px 12px; border-top: 1px solid var(--line); }
+  .benchmark-row .lbl { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.10em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700; }
+  .benchmark-row .v { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 18px; font-weight: 700; color: var(--ink); margin-top: 4px; letter-spacing: -0.02em; transition: color 0.4s ease; }
+
+  /* Compound-Cost */
+  .compound-card { padding: 24px 28px; background: var(--yellow); border: 2px solid var(--ink); margin-bottom: 16px; display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; transition: background 0.3s ease; }
+  .compound-body .lbl { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.10em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700; margin-bottom: 6px; }
+  .compound-body .desc { font-size: 16px; color: var(--ink); line-height: 1.5; font-weight: 700; }
+  .compound-body .desc strong { background: var(--ink); color: var(--yellow); padding: 0 6px; }
+  .compound-body .calc { font-size: 13px; color: rgba(40,36,32,0.7); margin-top: 12px; padding-top: 12px; border-top: 1.5px solid rgba(40,36,32,0.18); line-height: 1.55; font-weight: 400; font-style: italic; }
+  .compound-amount { text-align: right; }
+  .compound-amount .v { font-family: 'Geist Mono', ui-monospace, monospace; font-size: clamp(32px, 5vw, 48px); font-weight: 700; color: var(--ink); line-height: 1; letter-spacing: -0.04em; transition: opacity 0.3s ease; }
+  .compound-amount .sub { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; color: var(--ink-soft); font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; margin-top: 4px; }
+
+  /* Trajektorie */
+  .trajectory { padding: 24px 26px; background: var(--paper); border: 2px solid var(--ink); margin-bottom: 24px; }
+  .trajectory-title { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 4px; }
+  .trajectory-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 20px; }
+  .trajectory-line { position: relative; height: 80px; padding: 8px 0 30px; }
+  .trajectory-bar { position: absolute; left: 12px; right: 12px; top: 35px; height: 4px; background: var(--stone); }
+  .trajectory-fill { position: absolute; left: 12px; top: 35px; height: 4px; background: var(--yellow); transition: width 0.6s ease; }
+  .trajectory-marker { position: absolute; top: 28px; transform: translateX(-50%); transition: left 0.4s ease; }
+  .trajectory-marker .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--paper); border: 3px solid var(--ink); }
+  .trajectory-marker.now .dot { background: var(--yellow); }
+  .trajectory-marker .label { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; font-weight: 700; color: var(--ink); letter-spacing: 0.04em; white-space: nowrap; }
+  .trajectory-marker .value { position: absolute; top: 28px; left: 50%; transform: translateX(-50%); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 13px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+
+  /* 90-Tage-Recovery */
+  .recovery-box { padding: 22px 28px; background: var(--ink); color: var(--yellow); margin-bottom: 24px; display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; transition: opacity 0.3s ease; }
+  .recovery-body .lbl { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.10em; text-transform: uppercase; opacity: 0.65; font-weight: 700; margin-bottom: 6px; }
+  .recovery-body .desc { font-size: 15px; line-height: 1.5; font-weight: 700; }
+  .recovery-body .desc strong { background: var(--yellow); color: var(--ink); padding: 0 6px; }
+  .recovery-body .calc { font-size: 12px; opacity: 0.65; margin-top: 10px; padding-top: 10px; border-top: 1.5px solid rgba(244,231,90,0.18); line-height: 1.55; font-style: italic; }
+  .recovery-amount { text-align: right; }
+  .recovery-amount .v { font-family: 'Geist Mono', ui-monospace, monospace; font-size: clamp(26px, 4vw, 38px); font-weight: 700; line-height: 1; letter-spacing: -0.04em; }
+  .recovery-amount .sub { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; opacity: 0.65; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; margin-top: 4px; }
+
+  /* Engpässe */
+  .engpaesse { margin-bottom: 32px; }
+  .engpaesse-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 8px; }
+  .engpaesse-sub { font-size: 14px; color: var(--ink-soft); margin-bottom: 20px; line-height: 1.5; }
+  .engpass-card { padding: 20px 22px; background: var(--paper); border: 2px solid var(--ink); margin-bottom: 8px; display: grid; grid-template-columns: 50px 1fr 90px; gap: 16px; align-items: center; }
+  .engpass-num { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 22px; font-weight: 700; color: var(--ink); }
+  .engpass-body .engpass-label { font-size: 16px; font-weight: 700; color: var(--ink); line-height: 1.3; letter-spacing: -0.01em; }
+  .engpass-body .engpass-fix { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; color: var(--ink-soft); margin-top: 6px; line-height: 1.5; font-weight: 700; }
+  .engpass-points { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; font-weight: 700; color: var(--ink); padding: 6px 8px; background: var(--stone); text-align: center; line-height: 1.3; }
+  .engpass-points.zero { background: var(--yellow); }
+  .engpass-points .risk { font-size: 9px; opacity: 0.7; letter-spacing: 0.10em; text-transform: uppercase; display: block; margin-top: 3px; }
+
+  /* Spuren */
+  .spuren { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 32px; margin-bottom: 32px; }
+  @media (min-width: 720px) { .spuren { grid-template-columns: repeat(3, 1fr); } }
+  .spur { padding: 24px; border: 2px solid var(--ink); display: flex; flex-direction: column; gap: 12px; }
+  .spur.primary { background: var(--yellow); }
+  .spur.secondary { background: var(--paper); }
+  .spur.tertiary { background: var(--stone); }
+  .spur-num { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--ink-soft); }
+  .spur-title { font-size: 18px; font-weight: 700; color: var(--ink); line-height: 1.2; letter-spacing: -0.01em; }
+  .spur-desc { font-size: 13px; color: var(--ink); line-height: 1.5; flex: 1; }
+  .spur-cta { padding: 14px 18px; background: var(--ink); color: var(--yellow); font-family: 'Geist', sans-serif; font-size: 14px; font-weight: 700; text-decoration: none; text-align: center; cursor: pointer; border: none; display: block; transition: background 0.2s ease; }
+  .spur-cta:hover { background: var(--ink-soft); }
+  .spur-meta { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; color: var(--ink-soft); font-weight: 700; }
+
+  /* PDF Form */
+  .pdf-form { display: none; padding: 16px; background: rgba(40,36,32,0.05); margin-top: 12px; }
+  .pdf-form.active { display: block; }
+  .pdf-form input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--ink); font-family: 'Geist', sans-serif; font-size: 14px; margin-bottom: 8px; background: var(--paper); }
+  .pdf-form button { width: 100%; padding: 10px; background: var(--ink); color: var(--yellow); border: none; font-family: 'Geist', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
+
+  /* Präzisierung-Akkordeon */
+  .precision-section { border: 2px solid var(--ink); margin-bottom: 24px; }
+  .precision-toggle { width: 100%; padding: 22px 26px; background: var(--paper); border: none; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; text-align: left; transition: background 0.2s ease; }
+  .precision-toggle:hover { background: var(--stone); }
+  .precision-toggle.applied { background: var(--yellow); }
+  .precision-toggle-text .lbl { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.10em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700; }
+  .precision-toggle-text .head { font-size: 18px; font-weight: 700; color: var(--ink); margin-top: 4px; letter-spacing: -0.01em; line-height: 1.3; }
+  .precision-toggle-text .sub { font-size: 13px; color: var(--ink-soft); margin-top: 4px; line-height: 1.4; }
+  .precision-toggle .icon { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 22px; font-weight: 700; color: var(--ink); transition: transform 0.3s ease; flex-shrink: 0; }
+  .precision-section.open .precision-toggle .icon { transform: rotate(45deg); }
+  .precision-body { display: none; padding: 0 26px 26px; border-top: 1px solid var(--line); }
+  .precision-section.open .precision-body { display: block; animation: fadeIn 0.4s ease; }
+  .precision-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding-top: 22px; }
+  @media (max-width: 600px) { .precision-fields { grid-template-columns: 1fr; } }
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  .field-group label { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.10em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700; }
+  .field-group select { width: 100%; padding: 12px 14px; background: var(--paper); border: 2px solid var(--ink); font-family: 'Geist', sans-serif; font-size: 14px; color: var(--ink); cursor: pointer; appearance: none; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'><path d='M1 1l5 5 5-5' stroke='%23282420' stroke-width='2' fill='none'/></svg>"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+  .precision-submit { width: 100%; margin-top: 18px; padding: 14px 22px; background: var(--ink); color: var(--yellow); font-family: 'Geist', sans-serif; font-size: 14px; font-weight: 700; border: none; cursor: pointer; transition: opacity 0.2s ease; }
+  .precision-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+  .precision-submit:not(:disabled):hover { background: var(--ink-soft); }
+
+  /* Sensitivity-Slider */
+  .sensitivity-section { display: none; padding: 26px 28px; border: 2px solid var(--ink); background: var(--paper); margin-bottom: 24px; }
+  .sensitivity-section.visible { display: block; animation: fadeIn 0.5s ease; }
+  .sens-title { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 4px; }
+  .sens-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 22px; line-height: 1.5; }
+  .slider-row { margin-bottom: 22px; }
+  .slider-row:last-child { margin-bottom: 0; }
+  .slider-header { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: baseline; margin-bottom: 8px; }
+  .slider-label { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+  .slider-label .meta { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; color: var(--ink-soft); font-weight: 700; margin-left: 8px; letter-spacing: 0.04em; }
+  .slider-value { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 18px; font-weight: 700; color: var(--ink); padding: 4px 10px; background: var(--yellow); letter-spacing: -0.02em; }
+  .slider-input { width: 100%; height: 6px; background: var(--stone); appearance: none; outline: none; cursor: pointer; }
+  .slider-input::-webkit-slider-thumb { appearance: none; width: 22px; height: 22px; background: var(--ink); border: 3px solid var(--yellow); cursor: pointer; }
+  .slider-input::-moz-range-thumb { width: 16px; height: 16px; background: var(--ink); border: 3px solid var(--yellow); cursor: pointer; }
+  .slider-bounds { display: flex; justify-content: space-between; margin-top: 4px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; color: var(--ink-soft); font-weight: 700; }
+  .slider-reset { display: inline-block; margin-top: 8px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; color: var(--ink-soft); text-decoration: underline; cursor: pointer; }
+
+  /* Reset Link */
+  .reset-bar { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); text-align: center; }
+  .reset-bar a { color: var(--ink-soft); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; text-decoration: underline; cursor: pointer; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); padding: 14px 20px; background: var(--ink); color: var(--yellow); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 13px; font-weight: 700; transition: transform 0.3s ease; z-index: 100; }
+  .toast.visible { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="audit-tool">
+
+<!-- HEADER -->
+<div class="tool-header">
+  <div class="tool-eyebrow">Pipeline-Diagnose · 60 Sekunden · ohne E-Mail</div>
+  <h1 class="tool-title">Wo verliert deine Pipeline gerade Geld?</h1>
+  <p class="tool-sub">10 Fragen zu Marketing, Vertrieb, Tracking und Brand. Sofortiger Befund mit Branchen-Benchmark, Compound-Kosten-Schätzung und 12-Monats-Trajektorie. Kein Download · keine Schleife.</p>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-text" id="progress-text">0 / 10 beantwortet</div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+</div>
+
+<!-- QUESTIONS -->
+<div id="questions-section"></div>
+
+<!-- SUBMIT -->
+<div class="submit-bar">
+  <button class="submit-btn" id="submit-btn" disabled>
+    <span id="submit-text">Diagnose anzeigen</span>
+    <span class="arrow">→</span>
+  </button>
+</div>
+
+<!-- OUTPUT -->
+<div class="output" id="output">
+
+  <!-- Stage Indicator -->
+  <div class="stage-indicator" id="stage-indicator">Standard-Schätzung · DACH-Mittelstand</div>
+
+  <!-- Score -->
+  <div class="score-card">
+    <div class="score-label">Dein Score · Pipeline-Diagnose</div>
+    <div class="score-display">
+      <div class="score-number" id="score-number">0</div>
+      <div class="score-divider">/</div>
+      <div class="score-max">30</div>
+    </div>
+    <div class="stufe-badge" id="stufe-badge">Stufe 1</div>
+    <div class="stufe-label" id="stufe-label">System fehlt</div>
+  </div>
+
+  <!-- Branchen-Benchmark -->
+  <div class="benchmark">
+    <div class="benchmark-label">Branchen-Benchmark</div>
+    <div class="benchmark-name" id="benchmark-name">DACH-B2B-Mittelstand (Standard)</div>
+    <div class="benchmark-bar">
+      <div class="benchmark-track"></div>
+      <div class="benchmark-marker" id="bm-median"><div class="label">Median</div><div class="value" id="bm-median-v">14</div></div>
+      <div class="benchmark-marker" id="bm-top"><div class="label">Top-Quartil</div><div class="value" id="bm-top-v">22</div></div>
+      <div class="benchmark-marker you" id="bm-you"><div class="label">DU</div></div>
+    </div>
+    <div class="benchmark-rows">
+      <div class="benchmark-row"><div class="lbl">Branchen-Median</div><div class="v" id="bm-median-row">14 / 30</div></div>
+      <div class="benchmark-row"><div class="lbl">Top-Quartil</div><div class="v" id="bm-top-row">22 / 30</div></div>
+      <div class="benchmark-row"><div class="lbl">Dein Stand</div><div class="v" id="bm-you-row">– / 30</div></div>
+    </div>
+  </div>
+
+  <!-- Compound-Kosten -->
+  <div class="compound-card" id="compound-card">
+    <div class="compound-body">
+      <div class="lbl">Compound-Kosten · Pipeline-Verlust pro Jahr</div>
+      <div class="desc">Bei deinem aktuellen Score verbrennst du jährlich geschätzt <strong id="compound-amount-inline">180–280 k €</strong> an realisierbarer Pipeline.</div>
+      <div class="calc" id="compound-calc">Pro fehlendem Audit-Punkt gehen im DACH-B2B-Mittelstand erfahrungsgemäß im Durchschnitt 7,7 k € realisierbare Pipeline pro Jahr verloren. Bei dir: 18 fehlende Punkte. Eine präzisere Schätzung für dein Unternehmen findest du weiter unten.</div>
+    </div>
+    <div class="compound-amount">
+      <div class="v" id="compound-amount">240 k €</div>
+      <div class="sub">Pipeline-Verlust / Jahr</div>
+    </div>
+  </div>
+
+  <!-- Präzisierung-Akkordeon -->
+  <div class="precision-section open" id="precision-section">
+    <button class="precision-toggle" id="precision-toggle">
+      <div class="precision-toggle-text">
+        <div class="lbl">Optional · 30 Sekunden</div>
+        <div class="head">Schätzung an dein Unternehmen anpassen</div>
+        <div class="sub">4 Felder · Branche, Umsatz, Mitarbeiter, Reichweite. Compound-Kosten und Benchmark werden präziser für dein Profil.</div>
+      </div>
+      <div class="icon">+</div>
+    </button>
+    <div class="precision-body">
+      <div class="precision-fields">
+        <div class="field-group">
+          <label for="branche-select">Branche</label>
+          <select id="branche-select">
+            <option value="generic">DACH-B2B-Mittelstand (Standard)</option>
+            <option value="beratung">Beratung / Professional Services</option>
+            <option value="it">IT-Dienstleister / Software</option>
+            <option value="industrie">Mittelstand-Industrie / Maschinenbau</option>
+            <option value="immobilien">Immobilien / Hausverwaltung</option>
+            <option value="energie">Energie / Mieterstrom / Cleantech</option>
+            <option value="kanzlei">Kanzlei / Rechtsberatung</option>
+            <option value="messebau">Messebau / Eventindustrie</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="umsatz-select">Jahresumsatz</label>
+          <select id="umsatz-select">
+            <option value="standard">Bitte wählen</option>
+            <option value="r1">1–3 Mio €</option>
+            <option value="r2">3–10 Mio €</option>
+            <option value="r3">10–25 Mio €</option>
+            <option value="r4">25–50 Mio €</option>
+            <option value="r5">50+ Mio €</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="ma-select">Mitarbeiter</label>
+          <select id="ma-select">
+            <option value="standard">Bitte wählen</option>
+            <option value="m1">10–50</option>
+            <option value="m2">50–100</option>
+            <option value="m3">100–250</option>
+            <option value="m4">250–500</option>
+            <option value="m5">500+</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="geo-select">Markt-Reichweite</label>
+          <select id="geo-select">
+            <option value="standard">Bitte wählen</option>
+            <option value="regional">Regional</option>
+            <option value="national">National</option>
+            <option value="dach">DACH-Region</option>
+            <option value="international">International</option>
+          </select>
+        </div>
+      </div>
+      <button class="precision-submit" id="precision-submit" disabled>Schätzung anpassen</button>
+    </div>
+  </div>
+
+  <!-- Sensitivity-Slider -->
+  <div class="sensitivity-section" id="sensitivity-section">
+    <div class="sens-title">Mit deinen Pipeline-Werten rechnen</div>
+    <div class="sens-sub">Du kennst deine Zahlen besser als jede Branchen-Schätzung. Spiele mit den Reglern — die Compound-Kosten oben aktualisieren sich live.</div>
+
+    <div class="slider-row">
+      <div class="slider-header">
+        <div class="slider-label">Vertragswert · Avg. ACV<span class="meta">durchschnittlicher Auftrags-Wert</span></div>
+        <div class="slider-value"><span id="acv-display">35</span> k €</div>
+      </div>
+      <input type="range" class="slider-input" id="acv-slider" min="5" max="250" step="5" value="35">
+      <div class="slider-bounds"><span>5 k €</span><span>250 k €</span></div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-header">
+        <div class="slider-label">Leads pro Monat<span class="meta">Anfragen aller Kanäle</span></div>
+        <div class="slider-value"><span id="leads-display">30</span></div>
+      </div>
+      <input type="range" class="slider-input" id="leads-slider" min="10" max="500" step="5" value="30">
+      <div class="slider-bounds"><span>10</span><span>500</span></div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-header">
+        <div class="slider-label">Win-Rate · Abschluss-Quote<span class="meta">qualifizierter Lead → Vertrag</span></div>
+        <div class="slider-value"><span id="winrate-display">14</span> %</div>
+      </div>
+      <input type="range" class="slider-input" id="winrate-slider" min="5" max="35" step="1" value="14">
+      <div class="slider-bounds"><span>5 %</span><span>35 %</span></div>
+    </div>
+
+    <a class="slider-reset" id="slider-reset">Auf Branchen-Defaults zurücksetzen</a>
+  </div>
+
+  <!-- 90-Tage-Recovery -->
+  <div class="recovery-box">
+    <div class="recovery-body">
+      <div class="lbl">90-Tage-Recovery-Potenzial</div>
+      <div class="desc">Wenn du die <strong>drei Engpässe</strong> aus diesem Audit in den nächsten 90 Tagen fixst, kannst du einen erheblichen Anteil deines jährlichen Pipeline-Verlusts vermeiden.</div>
+      <div class="calc" id="recovery-calc">Erfahrungsgemäß lassen sich rund 35 % des jährlichen Pipeline-Verlusts in einem Quartal recovern, wenn die drei Top-Engpässe sauber umgesetzt werden — Pareto-Wirkung der größten Hebel.</div>
+    </div>
+    <div class="recovery-amount">
+      <div class="v" id="recovery-amount">– €</div>
+      <div class="sub">in 90 Tagen recoverbar</div>
+    </div>
+  </div>
+
+  <!-- Engpässe -->
+  <div class="engpaesse">
+    <h2 class="engpaesse-title">Drei Engpässe — sortiert nach Hebel-Wirkung</h2>
+    <p class="engpaesse-sub">Dein schwächster Punkt entscheidet die Pipeline-Realität — nicht dein stärkster. Diese drei Hebel haben den größten Pipeline-Effekt für die nächsten 90 Tage.</p>
+    <div id="engpass-list"></div>
+  </div>
+
+  <!-- Spuren -->
+  <div class="spuren">
+    <div class="spur primary">
+      <div class="spur-num">Spur 1 · Empfohlen</div>
+      <div class="spur-title">Pipeline-Audit-Walkthrough mit Dustin</div>
+      <div class="spur-desc">30 Min live · wir gehen die Engpässe durch · benennen den größten Hebel für 90 Tage. Kein Pitch · keine Schleife.</div>
+      <a class="spur-cta" id="cal-cta" href="#" target="_blank" rel="noopener">Erstgespräch buchen →</a>
+      <div class="spur-meta">Dustin recherchiert dich vorher · Pre-Call-Brief im Postfach</div>
+    </div>
+
+    <div class="spur secondary">
+      <div class="spur-num">Spur 2 · Vertiefung</div>
+      <div class="spur-title">Pipeline-Audit-Bericht · 28 Seiten</div>
+      <div class="spur-desc">Pro Punkt: Status · Risiko-Stufe · Branchen-Benchmark · Maßnahme · Aufwand × Wirkung · Quellen. Plus 90-Tage-Roadmap.</div>
+      <button class="spur-cta" id="pdf-toggle">Bericht + Newsletter →</button>
+      <form class="pdf-form" id="pdf-form">
+        <input type="text" id="pdf-name" placeholder="Vorname" required>
+        <input type="email" id="pdf-email" placeholder="E-Mail" required>
+        <button type="submit">Bericht anfordern</button>
+      </form>
+      <div class="spur-meta">PDF kommt sofort · Newsletter 2 ×/Mo · jederzeit abmeldbar</div>
+    </div>
+
+    <div class="spur tertiary">
+      <div class="spur-num">Spur 3 · Teilen</div>
+      <div class="spur-title">Score mit Sales-Lead diskutieren</div>
+      <div class="spur-desc">Score-Link kopieren · GF, Sales-Lead, Beirat können Stand sehen ohne Anmeldung. Diskussions-Grundlage für Strategie-Meeting.</div>
+      <button class="spur-cta" id="share-btn">Link kopieren</button>
+      <div class="spur-meta">Keine Daten geteilt · nur euer Score in der URL</div>
+    </div>
+  </div>
+
+  <div class="reset-bar">
+    <a id="reset-link">Diagnose zurücksetzen und erneut starten</a>
+  </div>
+</div>
+
+<div class="toast" id="toast">Link kopiert</div>
+</div>
+
+<script>
+(function() {
+  const CAL_URL = 'https://www.cal.eu/dustin-vogler/erstgesprach';
+
+  const questions = [
+    { id: 'q01', label: 'Reaktionszeit auf Inbound-Lead', frame: 'Wie schnell reagiert der Vertrieb auf einen Inbound-Lead?',
+      options: [{points:0,label:'Keine Reaktion oder erst nach Tagen'},{points:1,label:'Innerhalb 24 Stunden'},{points:2,label:'Innerhalb 1 Stunde'},{points:3,label:'Unter 5 Minuten · automatisiert'}],
+      fix: 'Slack + SMS-Trigger · 5-Min-SLA + Eskalations-Stufen', risk: 'KRITISCH' },
+    { id: 'q02', label: 'Welcome-Sequenz', frame: 'Was passiert in den ersten 14 Tagen, nachdem ein Lead reinkommt?',
+      options: [{points:0,label:'Nichts oder einzelne „Danke"-Mail'},{points:1,label:'1–2 Mails manuell'},{points:2,label:'3–4 Mails automatisiert'},{points:3,label:'5 Mails / 14 Tage mit ICP-Frage'}],
+      fix: 'Brevo-Automation · 5 Mails / 14 Tage · ICP-Frage in Mail 03', risk: 'HOCH' },
+    { id: 'q03', label: 'ICP-Definition', frame: 'Ist dein Ideal Customer Profile schriftlich dokumentiert?',
+      options: [{points:0,label:'„Wir machen alles für jeden"'},{points:1,label:'Grobes Bild · nicht schriftlich'},{points:2,label:'Schriftlich · ohne Negativ-ICP'},{points:3,label:'9 Pflichtfelder + Negativ-ICP'}],
+      fix: '9 Pflichtfelder schriftlich · Negativ-ICP genauso wichtig', risk: 'HOCH' },
+    { id: 'q04', label: 'Tracking-Stack', frame: 'Welche Tracking-Stufen sind sauber konfiguriert?',
+      options: [{points:0,label:'Nur GA4 oder weniger'},{points:1,label:'GA4 + GTM'},{points:2,label:'+ Conversion-API + CRM-Sync'},{points:3,label:'5 Stufen inkl. Closed-Loop Lead → Vertrag'}],
+      fix: '5-Stufen-Stack · GA4 + GTM + CAPI + CRM-Sync + Closed-Loop', risk: 'KRITISCH' },
+    { id: 'q05', label: 'Lead-Scoring + Schwellenwert', frame: 'Wie qualifiziert ihr Leads zu kaufbereiten Anfragen?',
+      options: [{points:0,label:'Bauchgefühl pro Lead'},{points:1,label:'Manuelles Scoring nach Demografie'},{points:2,label:'Automatisiert · aber ohne klare Übergabe-Schwelle'},{points:3,label:'Demografie + Verhalten + Kaufsignal · ab 60 Punkten automatische Sales-Übergabe'}],
+      fix: 'Demografie + Verhalten + Kaufsignal · ab 60 Punkten automatische Sales-Übergabe', risk: 'HOCH' },
+    { id: 'q06', label: 'Sales-Übergabe', frame: 'Wie kommt ein qualifizierter Lead zum Vertrieb?',
+      options: [{points:0,label:'Manuell · Tagesgeschäft entscheidet'},{points:1,label:'CRM-Eintrag · Sales schaut wann er Zeit hat'},{points:2,label:'Slack/Mail-Trigger · ohne Reaktionszeit-Vereinbarung'},{points:3,label:'Slack + SMS-Alarm · 5-Min-Reaktionszeit + Eskalation'}],
+      fix: 'Webhook + Slack-Alarm + SMS · 5-Min-Reaktionszeit + Eskalation', risk: 'KRITISCH' },
+    { id: 'q07', label: 'Closed-Loop-Tracking', frame: 'Kannst du Pipeline-Wert pro Kanal nachvollziehbar zuordnen?',
+      options: [{points:0,label:'Nein · keine Source-Attribution'},{points:1,label:'Manuelle Excel-Auswertung'},{points:2,label:'UTM-Tags in CRM teilweise befüllt'},{points:3,label:'UTM + Deal-Source-Field + Revenue-Attribution real-time'}],
+      fix: 'UTM-Tags + Deal-Source-Field + Revenue-Attribution real-time', risk: 'HOCH' },
+    { id: 'q08', label: 'Landing Pages pro Kanal', frame: 'Hast du dedizierte Landing Pages für deine Marketing-Kanäle?',
+      options: [{points:0,label:'Alles läuft auf Homepage'},{points:1,label:'1–2 generische Kontakt-LPs'},{points:2,label:'Pro Kanal 1 LP · einzelne Elemente'},{points:3,label:'Pro Kanal dedizierte LP mit allen 7 Conversion-Elementen'}],
+      fix: 'Pro Kanal eigene LP · 7-Element-Hebel sauber implementieren', risk: 'MITTEL' },
+    { id: 'q09', label: 'Founder-LinkedIn / Demand Creation', frame: 'Wie aktiv ist der Founder/GF auf LinkedIn?',
+      options: [{points:0,label:'Inaktiv oder nur reagierend'},{points:1,label:'1–2 Posts/Monat ohne Architektur'},{points:2,label:'Wöchentlich · ohne Pillar-Logik'},{points:3,label:'4 ×/Woche · Pillar-Architektur (Insight + Story + Frame + Pulse)'}],
+      fix: '4-Pillar-Architektur · 4 Posts/Woche · 50-Post-Algorithmus-Schwelle', risk: 'MITTEL' },
+    { id: 'q10', label: 'Pipeline-Coverage', frame: 'Wie steht deine Pipeline-Coverage zum Quartalsziel?',
+      options: [{points:0,label:'Unbekannt · keine Coverage-Logik'},{points:1,label:'1:1 oder weniger'},{points:2,label:'2:1'},{points:3,label:'3:1+ · stabil über 3 Monate'}],
+      fix: '3:1-Coverage als Pflicht-KPI · Win-Rate + Velocity messen', risk: 'KRITISCH' },
+  ];
+
+  // Branchen-Benchmarks
+  const benchmarks = {
+    generic:    { name: 'DACH-B2B-Mittelstand', median: 14, top: 22, costPerPoint: 9000, defaultACV: 35 },
+    beratung:   { name: 'Beratung / Professional Services', median: 12, top: 21, costPerPoint: 11000, defaultACV: 50 },
+    it:         { name: 'IT-Dienstleister / Software', median: 16, top: 24, costPerPoint: 12000, defaultACV: 60 },
+    industrie:  { name: 'Mittelstand-Industrie / Maschinenbau', median: 11, top: 19, costPerPoint: 14000, defaultACV: 80 },
+    immobilien: { name: 'Immobilien / Hausverwaltung', median: 9,  top: 17, costPerPoint: 7000, defaultACV: 25 },
+    energie:    { name: 'Energie / Mieterstrom / Cleantech', median: 13, top: 22, costPerPoint: 13000, defaultACV: 50 },
+    kanzlei:    { name: 'Kanzlei / Rechtsberatung', median: 10, top: 19, costPerPoint: 6000, defaultACV: 12 },
+    messebau:   { name: 'Messebau / Eventindustrie', median: 12, top: 20, costPerPoint: 10000, defaultACV: 70 },
+  };
+
+  // Multiplikatoren
+  const umsatzMulti = { standard: 1.0, r1: 0.6, r2: 0.85, r3: 1.15, r4: 1.5, r5: 2.0 };
+  const maMulti = { standard: 1.0, m1: 0.85, m2: 1.0, m3: 1.15, m4: 1.3, m5: 1.5 };
+  const geoMulti = { standard: 1.0, regional: 0.7, national: 1.0, dach: 1.2, international: 1.5 };
+
+  const STORAGE_KEY = 'vogler-pipeline-diagnose';
+  const state = {
+    branche: 'generic',
+    umsatz: 'standard',
+    ma: 'standard',
+    geo: 'standard',
+    answers: new Array(10).fill(null),
+    precisionApplied: false,
+    sliderUsed: false,
+    acv: 35,
+    leads: 30,
+    winRate: 14,
+  };
+
+  // Render Questions
+  const $q = document.getElementById('questions-section');
+  questions.forEach((q, idx) => {
+    const block = document.createElement('div');
+    block.className = 'question';
+    block.innerHTML = `
+      <div class="q-num">Frage ${String(idx+1).padStart(2,'0')} · ${q.label}</div>
+      <div class="q-frame">${q.frame}</div>
+      <div class="q-options">
+        ${q.options.map((opt, oIdx) => `
+          <button class="q-option" data-q-idx="${idx}" data-o-idx="${oIdx}" data-points="${opt.points}">
+            <div class="radio"></div>
+            <div class="label">${opt.label}</div>
+            <div class="pts mono">${opt.points} Pkt</div>
+          </button>
+        `).join('')}
+      </div>
+    `;
+    $q.appendChild(block);
+  });
+
+  // Antwort-Klicks
+  $q.addEventListener('click', (e) => {
+    const btn = e.target.closest('.q-option');
+    if (!btn) return;
+    const qIdx = parseInt(btn.dataset.qIdx, 10);
+    const oIdx = parseInt(btn.dataset.oIdx, 10);
+    const points = parseInt(btn.dataset.points, 10);
+    state.answers[qIdx] = { oIdx, points };
+    save();
+    const allOpts = $q.querySelectorAll(`.q-option[data-q-idx="${qIdx}"]`);
+    allOpts.forEach(o => o.classList.remove('selected'));
+    btn.classList.add('selected');
+    updateProgress();
+  });
+
+  document.getElementById('submit-btn').addEventListener('click', renderOutput);
+
+  function updateProgress() {
+    const answered = state.answers.filter(a => a !== null).length;
+    const pct = (answered / questions.length) * 100;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-text').textContent = `${answered} / ${questions.length} beantwortet`;
+    const btn = document.getElementById('submit-btn');
+    const txt = document.getElementById('submit-text');
+    if (answered === questions.length) {
+      btn.disabled = false;
+      txt.textContent = 'Diagnose anzeigen';
+    } else {
+      btn.disabled = true;
+      txt.textContent = `${questions.length - answered} Fragen offen`;
+    }
+  }
+
+  function calculateScore() {
+    return state.answers.reduce((sum, a) => sum + (a ? a.points : 0), 0);
+  }
+
+  function formatEuro(amount) {
+    // Vollformat mit Tausender-Punkt: "4.214.000 €"
+    return Math.round(amount).toLocaleString('de-DE') + ' €';
+  }
+
+  function calculateStufe(total) {
+    if (total <= 12) return { stufe: 1, label: 'System fehlt' };
+    if (total <= 22) return { stufe: 2, label: 'System teilweise' };
+    return { stufe: 3, label: 'System steht' };
+  }
+
+  function calculateCompound() {
+    const total = calculateScore();
+    const lostPoints = 30 - total;
+    const bm = benchmarks[state.branche] || benchmarks.generic;
+    const contextMultiplier =
+      (umsatzMulti[state.umsatz] || 1) *
+      (maMulti[state.ma] || 1) *
+      (geoMulti[state.geo] || 1);
+
+    // Slider-Mode → Volumen-basierte Berechnung (User-Zahlen + gedämpfter Kontext-Multiplikator)
+    if (state.sliderUsed) {
+      // ACV liegt in k €, daher × 1000 für absolute €
+      const pipelineYear = state.leads * (state.winRate / 100) * state.acv * 1000 * 12;
+      const baseLossRate = (lostPoints / 30) * 0.45; // max 45 % Verlust bei Score 0
+      // Kontext beeinflusst Lossrate gedämpft (50 % Wirkung), Cap bei 60 %
+      const adjustedLossRate = Math.min(0.6, baseLossRate * (1 + (contextMultiplier - 1) * 0.5));
+      const compound = pipelineYear * adjustedLossRate;
+      return {
+        amount: Math.round(compound),
+        low: Math.round(compound * 0.8),
+        high: Math.round(compound * 1.2),
+        pipelineYear,
+        adjustedLossRate,
+        contextMultiplier,
+        lostPoints,
+        bm,
+        mode: 'slider',
+      };
+    }
+
+    // Punkt-Mode → klassische Berechnung mit costPerPoint
+    const cpp = bm.costPerPoint * contextMultiplier;
+    const compoundAbs = Math.round(lostPoints * cpp * 0.85); // in absoluten €
+    const lowK = Math.round(lostPoints * cpp * 0.7 / 1000);   // in k € (für Range-Display)
+    const highK = Math.round(lostPoints * cpp * 1.0 / 1000);  // in k € (für Range-Display)
+    const avgPerPoint = (cpp * 0.85 / 1000);
+
+    return {
+      amount: compoundAbs,
+      low: lowK,
+      high: highK,
+      avgPerPoint,
+      contextMultiplier,
+      lostPoints,
+      bm,
+      mode: 'point',
+    };
+  }
+
+  function renderOutput() {
+    const total = calculateScore();
+    const { stufe, label: stufeLabel } = calculateStufe(total);
+
+    // Animate score
+    const $score = document.getElementById('score-number');
+    let curr = 0;
+    const step = Math.max(1, Math.ceil(total / 30));
+    const tick = setInterval(() => {
+      curr += step;
+      if (curr >= total) { curr = total; clearInterval(tick); }
+      $score.textContent = curr;
+    }, 40);
+
+    document.getElementById('stufe-badge').textContent = `Stufe ${stufe}`;
+    document.getElementById('stufe-label').textContent = stufeLabel;
+
+    updateAllOutput(total);
+
+    // Show output + scroll
+    document.getElementById('output').classList.add('visible');
+    setTimeout(() => {
+      document.getElementById('output').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+
+    // URL-Hash
+    const answersHash = state.answers.map(a => a ? a.points : 0).join(',');
+    window.history.replaceState(null, '', `#score=${total}&stufe=${stufe}&q=${answersHash}`);
+
+    if (typeof gtag === 'function') {
+      gtag('event', 'pipeline_diagnose_completed', { score: total, stufe, branche: state.branche });
+    }
+  }
+
+  function updateAllOutput(total) {
+    if (typeof total !== 'number') total = calculateScore();
+    const compound = calculateCompound();
+    const bm = compound.bm;
+
+    // Stage Indicator
+    const $stage = document.getElementById('stage-indicator');
+    if (compound.mode === 'slider') {
+      $stage.textContent = 'Schätzung mit deinen Pipeline-Werten';
+      $stage.className = 'stage-indicator deep';
+    } else if (state.precisionApplied) {
+      $stage.textContent = `An dein Unternehmen angepasst · ${bm.name}`;
+      $stage.className = 'stage-indicator precise';
+    } else {
+      $stage.textContent = 'Standard-Schätzung · DACH-Mittelstand';
+      $stage.className = 'stage-indicator';
+    }
+
+    // Benchmark-Name
+    document.getElementById('benchmark-name').textContent = state.precisionApplied
+      ? bm.name
+      : 'DACH-B2B-Mittelstand (Standard · noch nicht präzisiert)';
+
+    // Benchmark-Marker
+    const pctOf = (val) => Math.max(0, Math.min(100, (val / 30) * 100));
+    document.getElementById('bm-median-v').textContent = bm.median;
+    document.getElementById('bm-top-v').textContent = bm.top;
+    document.getElementById('bm-median-row').textContent = `${bm.median} / 30`;
+    document.getElementById('bm-top-row').textContent = `${bm.top} / 30`;
+    document.getElementById('bm-you-row').textContent = `${total} / 30`;
+    document.getElementById('bm-median').style.left = `calc(${pctOf(bm.median)}%)`;
+    document.getElementById('bm-top').style.left = `calc(${pctOf(bm.top)}%)`;
+    document.getElementById('bm-you').style.left = `calc(${pctOf(total)}%)`;
+
+    // Compound-Kosten · Vollformat mit Tausender-Punkt
+    document.getElementById('compound-amount').textContent = formatEuro(compound.amount);
+    if (compound.mode === 'slider') {
+      const lowV = Math.round(compound.low / 1000);
+      const highV = Math.round(compound.high / 1000);
+      document.getElementById('compound-amount-inline').textContent = `${lowV}–${highV} k €`;
+      const yearlyPipeline = compound.pipelineYear;
+      const lossPct = Math.round(compound.adjustedLossRate * 100);
+      const ctxNote = state.precisionApplied
+        ? ` Branche, Umsatz, Mitarbeiter und Reichweite sind eingerechnet (${bm.name}).`
+        : '';
+      document.getElementById('compound-calc').textContent =
+        `Berechnung: ${state.leads} Leads/Mo × ${state.winRate} % Win-Rate × ${state.acv} k € Vertragswert × 12 Monate = ca. ${formatEuro(yearlyPipeline)} Pipeline-Volumen pro Jahr. Bei Score ${total}/30 gehen davon ca. ${lossPct} % verloren.${ctxNote}`;
+    } else {
+      document.getElementById('compound-amount-inline').textContent = `${compound.low}–${compound.high} k €`;
+      const avg = compound.avgPerPoint.toFixed(1).replace('.', ',');
+      const sourceText = state.precisionApplied
+        ? `Pro fehlendem Audit-Punkt gehen in <strong>${bm.name}</strong> erfahrungsgemäß im Durchschnitt <strong>${avg} k €</strong> realisierbare Pipeline pro Jahr verloren. Bei dir: ${compound.lostPoints} fehlende Punkte. Diese Schätzung ist an Branche, Umsatz, Mitarbeiter und Reichweite angepasst.`
+        : `Pro fehlendem Audit-Punkt gehen im <strong>DACH-B2B-Mittelstand</strong> erfahrungsgemäß im Durchschnitt <strong>${avg} k €</strong> realisierbare Pipeline pro Jahr verloren. Bei dir: ${compound.lostPoints} fehlende Punkte. Eine präzisere Schätzung für dein Unternehmen findest du direkt darunter.`;
+      document.getElementById('compound-calc').innerHTML = sourceText;
+    }
+
+    // 90-Tage-Recovery · 35 % des jährlichen Compound-Verlusts
+    const recoveryAmount = compound.amount * 0.35;
+    document.getElementById('recovery-amount').textContent = formatEuro(recoveryAmount);
+
+    // Engpässe
+    const engpaesse = state.answers
+      .map((a, idx) => ({ q: questions[idx], points: a ? a.points : 0, idx }))
+      .sort((a, b) => a.points - b.points || a.idx - b.idx)
+      .slice(0, 3);
+
+    document.getElementById('engpass-list').innerHTML = engpaesse.map((e, i) => `
+      <div class="engpass-card">
+        <div class="engpass-num">${String(i+1).padStart(2,'0')}</div>
+        <div class="engpass-body">
+          <div class="engpass-label">${e.q.label}</div>
+          <div class="engpass-fix">→ ${e.q.fix}</div>
+        </div>
+        <div class="engpass-points ${e.points === 0 ? 'zero' : ''}">${e.points} / 3<span class="risk">${e.q.risk}</span></div>
+      </div>
+    `).join('');
+
+    // Cal.com-Link
+    const calUrl = `${CAL_URL}?utm_source=pipeline-diagnose&utm_score=${total}&utm_stufe=${calculateStufe(total).stufe}&utm_branche=${state.branche}`;
+    document.getElementById('cal-cta').href = calUrl;
+  }
+
+  // Präzisierung-Akkordeon
+  const $precSection = document.getElementById('precision-section');
+  document.getElementById('precision-toggle').addEventListener('click', () => {
+    $precSection.classList.toggle('open');
+  });
+
+  // Präzisierung-Field-Listener
+  ['branche-select', 'umsatz-select', 'ma-select', 'geo-select'].forEach(id => {
+    document.getElementById(id).addEventListener('change', checkPrecisionReady);
+  });
+
+  function checkPrecisionReady() {
+    const branche = document.getElementById('branche-select').value;
+    const umsatz = document.getElementById('umsatz-select').value;
+    const ma = document.getElementById('ma-select').value;
+    const geo = document.getElementById('geo-select').value;
+    const ready = umsatz !== 'standard' && ma !== 'standard' && geo !== 'standard';
+    document.getElementById('precision-submit').disabled = !ready;
+  }
+
+  document.getElementById('precision-submit').addEventListener('click', () => {
+    state.branche = document.getElementById('branche-select').value;
+    state.umsatz = document.getElementById('umsatz-select').value;
+    state.ma = document.getElementById('ma-select').value;
+    state.geo = document.getElementById('geo-select').value;
+    state.precisionApplied = true;
+
+    // Default-ACV für Slider auf Branchen-Wert setzen (wenn Slider noch nicht benutzt)
+    if (!state.sliderUsed) {
+      const bm = benchmarks[state.branche] || benchmarks.generic;
+      state.acv = bm.defaultACV;
+      // Default-Leads basierend auf Umsatz
+      const leadsByUmsatz = { r1: 15, r2: 25, r3: 40, r4: 60, r5: 100 };
+      state.leads = leadsByUmsatz[state.umsatz] || 30;
+      // Slider-DOM updaten
+      document.getElementById('acv-slider').value = state.acv;
+      document.getElementById('acv-display').textContent = state.acv;
+      document.getElementById('leads-slider').value = state.leads;
+      document.getElementById('leads-display').textContent = state.leads;
+    }
+
+    save();
+
+    // Pulse-Animation auf Compound-Card
+    const $card = document.getElementById('compound-card');
+    $card.style.background = '#3a3530';
+    $card.style.color = '#f4e75a';
+    setTimeout(() => {
+      $card.style.background = '';
+      $card.style.color = '';
+      updateAllOutput();
+    }, 300);
+
+    // Toggle-Button: applied-State
+    document.getElementById('precision-toggle').classList.add('applied');
+    $precSection.classList.remove('open');
+
+    // Sensitivity-Sektion zeigen
+    document.getElementById('sensitivity-section').classList.add('visible');
+  });
+
+  // Sensitivity-Slider
+  function updateSliderDisplay() {
+    document.getElementById('acv-display').textContent = state.acv;
+    document.getElementById('leads-display').textContent = state.leads;
+    document.getElementById('winrate-display').textContent = state.winRate;
+  }
+
+  document.getElementById('acv-slider').addEventListener('input', (e) => {
+    state.acv = parseInt(e.target.value, 10);
+    state.sliderUsed = true;
+    updateSliderDisplay();
+    updateAllOutput();
+    save();
+  });
+  document.getElementById('leads-slider').addEventListener('input', (e) => {
+    state.leads = parseInt(e.target.value, 10);
+    state.sliderUsed = true;
+    updateSliderDisplay();
+    updateAllOutput();
+    save();
+  });
+  document.getElementById('winrate-slider').addEventListener('input', (e) => {
+    state.winRate = parseInt(e.target.value, 10);
+    state.sliderUsed = true;
+    updateSliderDisplay();
+    updateAllOutput();
+    save();
+  });
+
+  document.getElementById('slider-reset').addEventListener('click', () => {
+    const bm = benchmarks[state.branche] || benchmarks.generic;
+    const leadsByUmsatz = { r1: 15, r2: 25, r3: 40, r4: 60, r5: 100 };
+    state.acv = bm.defaultACV;
+    state.leads = leadsByUmsatz[state.umsatz] || 30;
+    state.winRate = 14;
+    state.sliderUsed = false;
+    document.getElementById('acv-slider').value = state.acv;
+    document.getElementById('leads-slider').value = state.leads;
+    document.getElementById('winrate-slider').value = state.winRate;
+    updateSliderDisplay();
+    updateAllOutput();
+    save();
+  });
+
+  // PDF-Form
+  document.getElementById('pdf-toggle').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('pdf-form').classList.toggle('active');
+  });
+  document.getElementById('pdf-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('pdf-name').value;
+    const email = document.getElementById('pdf-email').value;
+    console.log('PDF-Form Submit:', { name, email, score: state.answers, branche: state.branche });
+    showToast('Bericht unterwegs zu ' + email);
+    e.target.reset();
+    e.target.classList.remove('active');
+  });
+
+  // Share
+  document.getElementById('share-btn').addEventListener('click', async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('Link kopiert');
+    } catch {
+      showToast('Bitte URL manuell kopieren');
+    }
+  });
+
+  // Reset
+  document.getElementById('reset-link').addEventListener('click', () => {
+    if (!confirm('Diagnose zurücksetzen und alle Antworten löschen?')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    window.location.hash = '';
+    window.location.reload();
+  });
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('visible');
+    setTimeout(() => t.classList.remove('visible'), 2400);
+  }
+
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      Object.assign(state, saved);
+      // Restore answers visual
+      if (Array.isArray(state.answers)) {
+        state.answers.forEach((a, idx) => {
+          if (!a) return;
+          const btn = $q.querySelector(`.q-option[data-q-idx="${idx}"][data-o-idx="${a.oIdx}"]`);
+          if (btn) btn.classList.add('selected');
+        });
+        updateProgress();
+      }
+      // Restore precision selects
+      if (state.precisionApplied) {
+        document.getElementById('branche-select').value = state.branche;
+        document.getElementById('umsatz-select').value = state.umsatz;
+        document.getElementById('ma-select').value = state.ma;
+        document.getElementById('geo-select').value = state.geo;
+        document.getElementById('precision-toggle').classList.add('applied');
+      }
+      // Restore slider
+      document.getElementById('acv-slider').value = state.acv;
+      document.getElementById('leads-slider').value = state.leads;
+      document.getElementById('winrate-slider').value = state.winRate;
+      updateSliderDisplay();
+      if (state.precisionApplied) {
+        document.getElementById('sensitivity-section').classList.add('visible');
+      }
+    } catch {}
+  }
+  load();
+
+  // URL-Hash
+  function loadFromHash() {
+    const hash = window.location.hash;
+    if (!hash.startsWith('#score=')) return false;
+    const params = new URLSearchParams(hash.slice(1));
+    const qStr = params.get('q');
+    if (!qStr) return false;
+    const points = qStr.split(',').map(p => parseInt(p, 10));
+    if (points.length !== questions.length) return false;
+    points.forEach((p, idx) => {
+      const optIdx = questions[idx].options.findIndex(o => o.points === p);
+      if (optIdx >= 0) state.answers[idx] = { oIdx: optIdx, points: p };
+    });
+    updateProgress();
+    renderOutput();
+    return true;
+  }
+  loadFromHash();
+
+})();
+</script>
+</body>
+</html>
