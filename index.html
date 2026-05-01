@@ -921,7 +921,7 @@
     formData.append('UMSATZ', state.umsatz);
     formData.append('MITARBEITER', state.ma);
     formData.append('GEO', state.geo);
-    formData.append('COMPOUND_LOSS', formatEuroPlain(compound.amount));
+    formData.append('COMPOUND_LOSS', formatEuro(compound.amount));
     formData.append('LEAD_SOURCE', 'pipeline-diagnose-tool');
 
     // Brevo-Pflichtfelder
