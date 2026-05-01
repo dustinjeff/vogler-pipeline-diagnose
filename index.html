@@ -928,22 +928,24 @@
     formData.append('email_address_check', '');
     formData.append('locale', 'de');
 
-    // Fire-and-forget · no-cors kann lange hängen, daher nicht awaiten
-    fetch(BREVO_FORM_ACTION, {
-      method: 'POST',
-      body: formData,
-      mode: 'no-cors',
-    }).catch(err => console.error('Brevo submit error:', err));
+    // UI sofort resetten · kein setTimeout, kein await
+    console.log('[PD] UI reset sofort (v4)');
+    showToast('Bestätigungs-Mail unterwegs · prüfe dein Postfach');
+    e.target.reset();
+    e.target.classList.remove('active');
+    submitBtn.textContent = originalLabel;
+    submitBtn.disabled = false;
 
-    // Sofort UI-Feedback (Brevo bestätigt eh per E-Mail)
-    setTimeout(() => {
-      console.log('[PD] UI reset nach 600ms');
-      showToast('Bestätigungs-Mail unterwegs · prüfe dein Postfach');
-      e.target.reset();
-      e.target.classList.remove('active');
-      submitBtn.textContent = originalLabel;
-      submitBtn.disabled = false;
-    }, 600);
+    // Fire-and-forget Brevo-Submit (läuft im Hintergrund)
+    try {
+      fetch(BREVO_FORM_ACTION, {
+        method: 'POST',
+        body: formData,
+        mode: 'no-cors',
+      }).then(() => console.log('[PD] Brevo POST OK')).catch(err => console.error('[PD] Brevo error:', err));
+    } catch (err) {
+      console.error('[PD] Brevo sync error:', err);
+    }
 
     if (typeof gtag === 'function') {
       gtag('event', 'pipeline_diagnose_pdf_request', { score: total, stufe, branche: state.branche });
