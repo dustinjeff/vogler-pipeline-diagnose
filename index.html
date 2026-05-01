@@ -158,6 +158,10 @@
   .pdf-form input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--ink); font-family: 'Geist', sans-serif; font-size: 14px; margin-bottom: 8px; background: var(--paper); }
   .pdf-form button { width: 100%; padding: 10px; background: var(--ink); color: var(--yellow); border: none; font-family: 'Geist', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
 
+  /* PDF-Export-Field in Spur 3 */
+  .pdf-company-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--ink); font-family: 'Geist', sans-serif; font-size: 13px; background: var(--paper); color: var(--ink); margin-bottom: 8px; }
+  .pdf-company-input:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
+
   /* Präzisierung-Akkordeon */
   .precision-section { border: 2px solid var(--ink); margin-bottom: 24px; }
   .precision-toggle { width: 100%; padding: 22px 26px; background: var(--paper); border: none; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; text-align: left; transition: background 0.2s ease; }
@@ -421,11 +425,12 @@
     </div>
 
     <div class="spur tertiary">
-      <div class="spur-num">Spur 3 · Teilen</div>
-      <div class="spur-title">Score mit Sales-Lead diskutieren</div>
-      <div class="spur-desc">Score-Link kopieren · GF, Sales-Lead, Beirat können Stand sehen ohne Anmeldung. Diskussions-Grundlage für Strategie-Meeting.</div>
-      <button class="spur-cta" id="share-btn">Link kopieren</button>
-      <div class="spur-meta">Keine Daten geteilt · nur euer Score in der URL</div>
+      <div class="spur-num">Spur 3 · Mitnehmen</div>
+      <div class="spur-title">Ergebnis als PDF speichern</div>
+      <div class="spur-desc">Score, Engpässe, Compound-Kosten und Maßnahmen als druckbares PDF — zum Mitnehmen oder intern an GF, Sales-Lead, Beirat weiterleiten.</div>
+      <input type="text" id="pdf-company" placeholder="Firmenname (optional)" class="pdf-company-input" maxlength="60">
+      <button class="spur-cta" id="pdf-export-btn">PDF erstellen</button>
+      <div class="spur-meta">Druck-Dialog öffnet sich · dort „Als PDF speichern" wählen</div>
     </div>
   </div>
 
@@ -859,16 +864,150 @@
     e.target.classList.remove('active');
   });
 
-  // Share
-  document.getElementById('share-btn').addEventListener('click', async () => {
-    const url = window.location.href;
-    try {
-      await navigator.clipboard.writeText(url);
-      showToast('Link kopiert');
-    } catch {
-      showToast('Bitte URL manuell kopieren');
-    }
+  // PDF-Export
+  document.getElementById('pdf-export-btn').addEventListener('click', () => {
+    generatePDF();
   });
+
+  function fmtEuroPlain(amount) {
+    return Math.round(amount).toLocaleString('de-DE') + ' €';
+  }
+
+  function generatePDF() {
+    const total = calculateScore();
+    const { stufe, label: stufeLabel } = calculateStufe(total);
+    const compound = calculateCompound();
+    const bm = compound.bm;
+    const recovery = compound.amount * 0.35;
+    const company = (document.getElementById('pdf-company').value.trim()) || 'Pipeline-Diagnose';
+    const date = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+    // Engpässe
+    const engpaesse = state.answers
+      .map((a, idx) => ({ q: questions[idx], points: a ? a.points : 0, idx }))
+      .sort((a, b) => a.points - b.points || a.idx - b.idx)
+      .slice(0, 3);
+
+    // Kontext-Block (nur wenn präzisiert)
+    let kontextHtml = '';
+    if (state.precisionApplied) {
+      const umsatzLabels = { r1: '1–3 Mio €', r2: '3–10 Mio €', r3: '10–25 Mio €', r4: '25–50 Mio €', r5: '50+ Mio €' };
+      const maLabels = { m1: '10–50', m2: '50–100', m3: '100–250', m4: '250–500', m5: '500+' };
+      const geoLabels = { regional: 'Regional', national: 'National', dach: 'DACH-Region', international: 'International' };
+      kontextHtml =
+        '<h2>Unternehmens-Kontext</h2>' +
+        '<table><tbody>' +
+        '<tr><td style="width:40%;color:#888;">Branche</td><td><strong>' + bm.name + '</strong></td></tr>' +
+        '<tr><td style="color:#888;">Jahresumsatz</td><td><strong>' + (umsatzLabels[state.umsatz] || '—') + '</strong></td></tr>' +
+        '<tr><td style="color:#888;">Mitarbeiter</td><td><strong>' + (maLabels[state.ma] || '—') + '</strong></td></tr>' +
+        '<tr><td style="color:#888;">Markt-Reichweite</td><td><strong>' + (geoLabels[state.geo] || '—') + '</strong></td></tr>' +
+        '</tbody></table>';
+    }
+
+    // Slider-Block (nur wenn slider verwendet)
+    let sliderHtml = '';
+    if (state.sliderUsed) {
+      sliderHtml =
+        '<h2>Pipeline-Inputs</h2>' +
+        '<table><tbody>' +
+        '<tr><td style="width:40%;color:#888;">Vertragswert (Avg. ACV)</td><td><strong>' + state.acv + ' k €</strong></td></tr>' +
+        '<tr><td style="color:#888;">Leads pro Monat</td><td><strong>' + state.leads + '</strong></td></tr>' +
+        '<tr><td style="color:#888;">Win-Rate</td><td><strong>' + state.winRate + ' %</strong></td></tr>' +
+        '</tbody></table>';
+    }
+
+    // Engpass-Tabelle
+    const engpassRows = engpaesse.map((e, i) =>
+      '<tr>' +
+      '<td style="font-family:monospace;color:#b8960a;font-weight:700;">' + String(i + 1).padStart(2, '0') + '</td>' +
+      '<td><strong>' + e.q.label + '</strong><br><span style="font-size:12px;color:#666;">' + e.q.fix + '</span></td>' +
+      '<td style="text-align:center;font-family:monospace;font-weight:700;">' + e.points + ' / 3</td>' +
+      '<td style="font-family:monospace;font-size:11px;letter-spacing:1px;color:#888;">' + e.q.risk + '</td>' +
+      '</tr>'
+    ).join('');
+
+    const html =
+      '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">' +
+      '<title>Pipeline-Diagnose · ' + company + '</title>' +
+      '<style>' +
+      'body{font-family:Helvetica,Arial,sans-serif;color:#222;line-height:1.6;max-width:800px;margin:0 auto;padding:40px 32px;}' +
+      'h1{font-size:22px;margin-bottom:4px;}' +
+      'h2{font-size:16px;margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #f4e75a;}' +
+      'table{width:100%;border-collapse:collapse;margin:12px 0;}' +
+      'th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#888;padding:8px 12px;border-bottom:2px solid #ddd;}' +
+      'td{padding:10px 12px;border-bottom:1px solid #eee;font-size:13px;vertical-align:top;}' +
+      '.kpi-row{display:flex;gap:16px;margin:20px 0;}' +
+      '.kpi{flex:1;text-align:center;padding:16px;border:1px solid #ddd;border-radius:8px;}' +
+      '.kpi-val{font-size:24px;font-weight:700;font-family:monospace;letter-spacing:-1px;}' +
+      '.kpi-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-top:4px;}' +
+      '.kpi.score{background:#222;color:#f4e75a;border-color:#222;}' +
+      '.kpi.score .kpi-val{color:#f4e75a;}' +
+      '.kpi.score .kpi-label{color:rgba(244,231,90,0.7);}' +
+      '.kpi.recovery{background:#f4e75a;border-color:#222;}' +
+      '.kpi.recovery .kpi-val{color:#222;}' +
+      '.cta-box{background:#222;color:#f4e75a;padding:20px 24px;border-radius:8px;margin:32px 0 20px;}' +
+      '.cta-box h3{margin:0 0 8px;font-size:15px;color:#f4e75a;}' +
+      '.cta-box p{margin:0;font-size:13px;color:rgba(244,231,90,0.85);}' +
+      '.cta-box a{color:#f4e75a;text-decoration:underline;}' +
+      '.footer{margin-top:40px;padding-top:16px;border-top:1px solid #ddd;font-size:11px;color:#aaa;text-align:center;}' +
+      '@media print{body{padding:20px;}.cta-box{background:#222 !important;-webkit-print-color-adjust:exact;color-adjust:exact;}}' +
+      '</style></head><body>' +
+
+      // Header
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;">' +
+      '<div style="display:flex;align-items:center;gap:16px;">' +
+      '<img src="https://cdn.prod.website-files.com/69de227433c0933c1c992ef8/69df70be48745487529a2c40_vm%20rebranding.png" alt="Vogler Marketing" style="height:28px;width:auto;">' +
+      '<div><h1 style="margin:0;">Pipeline-Diagnose</h1>' +
+      '<div style="font-size:14px;color:#888;">' + company + ' · ' + date + '</div></div></div>' +
+      '<div style="font-size:12px;color:#aaa;">vogler.marketing</div></div>' +
+
+      // 3-KPI-Row
+      '<div class="kpi-row">' +
+      '<div class="kpi score"><div class="kpi-val">' + total + ' / 30</div><div class="kpi-label">Score · Stufe ' + stufe + ' · ' + stufeLabel + '</div></div>' +
+      '<div class="kpi"><div class="kpi-val">' + fmtEuroPlain(compound.amount) + '</div><div class="kpi-label">Pipeline-Verlust pro Jahr</div></div>' +
+      '<div class="kpi recovery"><div class="kpi-val">' + fmtEuroPlain(recovery) + '</div><div class="kpi-label">90-Tage-Recovery-Potenzial</div></div>' +
+      '</div>' +
+
+      // Branchen-Benchmark
+      '<h2>Branchen-Benchmark</h2>' +
+      '<table><thead><tr><th>Vergleichsgruppe</th><th style="text-align:right;">Median</th><th style="text-align:right;">Top-Quartil</th><th style="text-align:right;">Dein Score</th></tr></thead>' +
+      '<tbody><tr><td><strong>' + bm.name + '</strong></td>' +
+      '<td style="text-align:right;font-family:monospace;">' + bm.median + ' / 30</td>' +
+      '<td style="text-align:right;font-family:monospace;">' + bm.top + ' / 30</td>' +
+      '<td style="text-align:right;font-family:monospace;font-weight:700;">' + total + ' / 30</td>' +
+      '</tr></tbody></table>' +
+
+      kontextHtml +
+      sliderHtml +
+
+      // Engpässe
+      '<h2>Drei Engpässe — sortiert nach Hebel-Wirkung</h2>' +
+      '<table><thead><tr><th>#</th><th>Engpass · Maßnahme</th><th style="text-align:center;">Score</th><th>Risiko</th></tr></thead>' +
+      '<tbody>' + engpassRows + '</tbody></table>' +
+      '<div style="font-size:12px;color:#888;margin-top:8px;">Saubere Umsetzung dieser drei Hebel in 90 Tagen recovert erfahrungsgemäß rund 35 % des jährlichen Pipeline-Verlusts.</div>' +
+
+      // CTA
+      '<div class="cta-box">' +
+      '<h3>Nächster Schritt: Pipeline-Audit-Walkthrough mit Dustin</h3>' +
+      '<p>30 Minuten live · wir gehen die Engpässe durch und benennen den größten Hebel für 90 Tage. Kein Pitch · keine Schleife.</p>' +
+      '<p style="margin-top:8px;"><strong>Termin buchen:</strong> <a href="https://www.cal.eu/dustin-vogler/erstgesprach">cal.eu/dustin-vogler/erstgesprach</a></p>' +
+      '</div>' +
+
+      // Footer
+      '<div class="footer">' +
+      '<div>Erstellt mit der Pipeline-Diagnose · Vogler Marketing</div>' +
+      '<div style="margin-top:4px;">vogler.marketing/pipeline-diagnose · Schätzwerte · ' + date + '</div>' +
+      '</div></body></html>';
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showToast('Bitte Pop-up-Blocker für vogler.marketing erlauben');
+      return;
+    }
+    printWindow.document.write(html);
+    printWindow.document.close();
+    setTimeout(function () { printWindow.print(); }, 500);
+  }
 
   // Reset
   document.getElementById('reset-link').addEventListener('click', () => {
