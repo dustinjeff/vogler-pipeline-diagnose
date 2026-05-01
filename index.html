@@ -942,6 +942,24 @@
   }
   loadFromHash();
 
+  // postMessage Auto-Resize · damit Outer-Page (Webflow) auf Mobile sauber scrollt
+  function sendHeight() {
+    if (window.parent === window) return;
+    const h = Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight
+    );
+    try {
+      window.parent.postMessage({ type: 'pipeline-diagnose-height', height: h }, '*');
+    } catch (e) {}
+  }
+  window.addEventListener('load', sendHeight);
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(sendHeight).observe(document.body);
+  } else {
+    setInterval(sendHeight, 1000);
+  }
+
 })();
 </script>
 </body>
